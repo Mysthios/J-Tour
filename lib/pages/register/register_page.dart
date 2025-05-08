@@ -1,15 +1,16 @@
 import "package:flutter/material.dart";
-import 'package:j_tour/pages/register/register_page.dart';
+import "package:j_tour/pages/login/login_page.dart";
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
   bool _passwordVisible = false;
+  bool _passwordConfirmVisible = false;
 
   static const Color primaryColor = Color.fromRGBO(0, 111, 185, 1);
 
@@ -72,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        "Selamat Datang!",
+                        "Buat Akun!",
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
@@ -96,10 +97,11 @@ class _LoginPageState extends State<LoginPage> {
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "Masuk ke akun Anda dan buat liburan Anda lebih mudah dan nyaman",
+                      "Buat akun Anda dan buat liburan Anda lebih mudah dan nyaman",
                       style: TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                   ),
+
                   const SizedBox(height: 24),
 
                   // Input field for email
@@ -107,6 +109,16 @@ class _LoginPageState extends State<LoginPage> {
                     decoration: _buildInputDecoration(
                       hintText: 'Email',
                       prefixIcon: Icons.email_outlined,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Input field for username
+                  TextFormField(
+                    decoration: _buildInputDecoration(
+                      hintText: 'Username',
+                      prefixIcon: Icons.person_outline,
                     ),
                   ),
 
@@ -134,9 +146,33 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
+                  const SizedBox(height: 8),
+
+                  // Input field for confirm password
+                  TextFormField(
+                    obscureText: !_passwordConfirmVisible,
+                    decoration: _buildInputDecoration(
+                      hintText: 'Konfirmasi Password',
+                      prefixIcon: Icons.lock_outlined,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _passwordConfirmVisible
+                              ? Icons.remove_red_eye_outlined
+                              : Icons.visibility_off_outlined,
+                          color: primaryColor,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _passwordConfirmVisible = !_passwordConfirmVisible;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 24),
 
-                  // Login button
+                  // Register button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -150,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       child: const Text(
-                        'Masuk',
+                        'Daftar',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -160,16 +196,19 @@ class _LoginPageState extends State<LoginPage> {
                   ),
 
                   const SizedBox(height: 12),
+
                   Text(
-                    "atau masuk dengan",
+                    "atau daftar dengan",
                     style: TextStyle(
                       color: Colors.black54,
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+
                   const SizedBox(height: 12),
-                  // login with google button
+
+                  // register with google button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -189,7 +228,7 @@ class _LoginPageState extends State<LoginPage> {
                           Image.asset('assets/images/google.png', height: 24),
                           const SizedBox(width: 8),
                           const Text(
-                            'Masuk dengan Google',
+                            'Daftar dengan Google',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -199,14 +238,14 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  // Login Link
+                  // Register Link
                   const SizedBox(height: 12),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(
-                        "belum punya akun? ",
+                        "sudah mempunyai akun? ",
                         style: TextStyle(color: Colors.black54),
                       ),
                       GestureDetector(
@@ -214,12 +253,12 @@ class _LoginPageState extends State<LoginPage> {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const RegisterPage(),
+                              builder: (context) => const LoginPage(),
                             ),
                           );
                         },
                         child: const Text(
-                          "Register",
+                          "Login",
                           style: TextStyle(
                             color: Colors.lightBlueAccent,
                             fontWeight: FontWeight.w600,
@@ -228,26 +267,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  // Forgot password link
-                  GestureDetector(
-                    onTap: () {
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (context) => const ForgotPasswordPage(),
-                      //   ),
-                      // );
-                    },
-                    child: const Text(
-                      "Lupa Password?",
-                      style: TextStyle(
-                        color: Colors.lightBlueAccent,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),

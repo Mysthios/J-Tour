@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:j_tour/pages/homepage/homepage.dart';
+import 'package:j_tour/pages/login/login_page.dart';
 
 class OnboardingPage extends StatelessWidget {
   const OnboardingPage({super.key});
@@ -20,9 +21,7 @@ class OnboardingPage extends StatelessWidget {
             ),
           ),
           // Overlay
-          Container(
-            color: Colors.black.withOpacity(0.2),
-          ),
+          Container(color: Colors.black.withOpacity(0.2)),
           // Content
           SafeArea(
             child: Padding(
@@ -40,7 +39,10 @@ class OnboardingPage extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -67,10 +69,7 @@ class OnboardingPage extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Text(
                     'We Travelin are ready to help you on\nvacation around Jember',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.white70),
                   ),
                 ],
               ),
@@ -98,7 +97,9 @@ class OnboardingPage extends StatelessWidget {
                         // Navigate to HomePage when button is pressed
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const HomePage()),
+                          MaterialPageRoute(
+                            builder: (context) => const HomePage(),
+                          ),
                         );
                       },
                       style: TextButton.styleFrom(
@@ -107,7 +108,10 @@ class OnboardingPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                      icon: const Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                      ),
                       label: const Text(
                         "Let's Get Started",
                         style: TextStyle(color: Colors.white, fontSize: 16),
@@ -125,7 +129,15 @@ class OnboardingPage extends StatelessWidget {
                         style: TextStyle(color: Colors.black54),
                       ),
                       GestureDetector(
-                        onTap: () {},
+                        onTap: () {
+                          // Navigate to LoginPage when text is tapped
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginPage(),
+                            ),
+                          );
+                        },
                         child: const Text(
                           "Login",
                           style: TextStyle(
