@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/pages/homepage/homepage.dart';
 import 'package:j_tour/pages/homepage/widgets/bottom_navbar.dart';
+import 'package:j_tour/pages/search/search_page.dart';
 import 'package:j_tour/providers/bottom_navbar_provider.dart';
 
 
@@ -14,7 +15,7 @@ class MainPage extends ConsumerWidget {
 
     final List<Widget> pages = [
       const HomePage(),
-      // const SearchPage(), //ini panggil satu persatu per page nantinya
+      const SearchPage(), //ini panggil satu persatu per page nantinya
       // const BookmarkPage(),
       // const ProfilePage(),
     ];
