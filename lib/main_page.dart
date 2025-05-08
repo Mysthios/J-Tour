@@ -14,6 +14,7 @@ class MainPage extends ConsumerWidget {
 
     final List<Widget> pages = [
       const HomePage(),
+      
       // const SearchPage(), //ini panggil satu persatu per page nantinya
       // const BookmarkPage(),
       // const ProfilePage(),
