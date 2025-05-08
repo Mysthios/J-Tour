@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.j_tour"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = ^3.29.3
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
