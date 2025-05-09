@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:j_tour/pages/account/account_page.dart';
 import 'package:j_tour/pages/onBoarding/onboarding_page.dart';
+import 'package:j_tour/pages/saved/saved_page.dart';
 import 'package:j_tour/pages/search/search_page.dart';
 
 void main() {
@@ -28,7 +30,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSwatch().copyWith(primary: Colors.blue),
       ),
       debugShowCheckedModeBanner: false,
-      home: const SearchPage(),
+      home: const AccountPage(),
     );
   }
 }
