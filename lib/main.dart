@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:j_tour/pages/account/account_page.dart';
-import 'package:j_tour/pages/onBoarding/onboarding_page.dart';
-import 'package:j_tour/pages/saved/saved_page.dart';
-import 'package:j_tour/pages/search/search_page.dart';
+import 'package:j_tour/main_page.dart';
 
 void main() {
   // Atur warna status bar
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Color(0xFFF6F6F6),
-    statusBarIconBrightness: Brightness.dark, 
+    statusBarIconBrightness: Brightness.dark,
   ));
 
   runApp(const ProviderScope(child: MyApp()));
@@ -30,7 +27,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSwatch().copyWith(primary: Colors.blue),
       ),
       debugShowCheckedModeBanner: false,
-      home: const AccountPage(),
+      home: const MainPage(),
     );
   }
 }

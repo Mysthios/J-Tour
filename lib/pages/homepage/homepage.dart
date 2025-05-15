@@ -93,10 +93,10 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex, // ✅ gunakan variabel ini
-        onTap: _onNavBarTap,         // ✅ dan fungsi ini
-      ),
+      // bottomNavigationBar: CustomBottomNavBar(
+      //   currentIndex: _currentIndex, // ✅ gunakan variabel ini
+      //   onTap: _onNavBarTap, // ✅ dan fungsi ini
+      // ),
     );
   }
 }

@@ -35,78 +35,77 @@ class _AccountPageState extends State<AccountPage> {
       body: Column(
         children: [
           // Profile Header
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          child: Stack(
-            children: [
-              // 🔳 Background hitam dengan konten profil
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 32),
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  children: const [
-                    Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 48,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Fairuz Zaki',
-                      style: TextStyle(
-                        fontSize: 16,
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            child: Stack(
+              children: [
+                // 🔳 Background hitam dengan konten profil
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Column(
+                    children: const [
+                      Icon(
+                        Icons.person,
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                        size: 48,
                       ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'fairuzzaki972@gmail.com',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white70,
+                      SizedBox(height: 16),
+                      Text(
+                        'Fairuz Zaki',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 🔘 Lingkaran kiri atas
-              Positioned(
-                top: -30,
-                left: -30,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    shape: BoxShape.circle,
+                      SizedBox(height: 4),
+                      Text(
+                        'fairuzzaki972@gmail.com',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
 
-              // 🔘 Lingkaran kanan bawah
-              Positioned(
-                bottom: -40,
-                right: -40,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    shape: BoxShape.circle,
+                // 🔘 Lingkaran kiri atas
+                Positioned(
+                  top: -30,
+                  left: -30,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
-            ],
+
+                // 🔘 Lingkaran kanan bawah
+                Positioned(
+                  bottom: -40,
+                  right: -40,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-
+          const SizedBox(height: 24),
 
           // Menu Items
           Container(
@@ -178,10 +177,10 @@ class _AccountPageState extends State<AccountPage> {
           )
         ],
       ),
-            bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavBarTap,
-      ),
+      //       bottomNavigationBar: CustomBottomNavBar(
+      //   currentIndex: _currentIndex,
+      //   onTap: _onNavBarTap,
+      // ),
     );
   }
 }
