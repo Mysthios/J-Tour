@@ -12,7 +12,12 @@ const Color kPrimaryBlue = Color(0xFF0072BC);
 
 class _SearchPageState extends State<SearchPage> {
   int _currentIndex = 1;
-  final List<String> categories = ["Populer", "Rekomendasi", "Pantai", "Pemandian"];
+  final List<String> categories = [
+    "Populer",
+    "Rekomendasi",
+    "Pantai",
+    "Pemandian"
+  ];
   String selectedCategory = "Populer";
 
   void _onNavBarTap(int index) {
@@ -101,11 +106,9 @@ class _SearchPageState extends State<SearchPage> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color:isSelected ? kPrimaryBlue : Colors.white,
+                        color: isSelected ? kPrimaryBlue : Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: kPrimaryBlue
-                        ),
+                        border: Border.all(color: kPrimaryBlue),
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -151,10 +154,10 @@ class _SearchPageState extends State<SearchPage> {
           ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavBarTap,
-      ),
+      // bottomNavigationBar: CustomBottomNavBar(
+      //   currentIndex: _currentIndex,
+      //   onTap: _onNavBarTap,
+      // ),
     );
   }
 }
@@ -196,7 +199,8 @@ class DestinationCard extends StatelessWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Image.asset(
                   imagePath,
                   height: 140,
