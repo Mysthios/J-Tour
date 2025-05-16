@@ -1,24 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:j_tour/pages/homepage/widgets/bottom_navbar.dart';
 
-class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+class SavedPage extends StatefulWidget {
+  const SavedPage({super.key});
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  State<SavedPage> createState() => _SavedPageState();
 }
 
 const Color kPrimaryBlue = Color(0xFF0072BC);
 
-class _SearchPageState extends State<SearchPage> {
-  int _currentIndex = 1;
-  final List<String> categories = [
-    "Populer",
-    "Rekomendasi",
-    "Pantai",
-    "Pemandian"
-  ];
-  String selectedCategory = "Populer";
+class _SavedPageState extends State<SavedPage> {
+  int _currentIndex = 2; 
+
 
   void _onNavBarTap(int index) {
     setState(() => _currentIndex = index);
@@ -34,7 +28,7 @@ class _SearchPageState extends State<SearchPage> {
         backgroundColor: const Color(0xFFF6F6F6),
         elevation: 0,
         title: const Text(
-          "Eksplor Wisata",
+          "Tersimpan",
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.w600,
@@ -49,82 +43,41 @@ class _SearchPageState extends State<SearchPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 🔍 Search bar & filter
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 45,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.search, color: Colors.grey),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            decoration: const InputDecoration(
-                              hintText: "Cari",
-                              hintStyle: TextStyle(color: Colors.grey),
-                              border: InputBorder.none,
-                              isCollapsed: true,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
+          Row(
+            children: [
+              Expanded(
+                child: Container(
                   height: 45,
-                  width: 45,
                   decoration: BoxDecoration(
-                    color: Colors.black,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.tune, color: Colors.white, size: 20),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // 📂 Kategori scrollable
-            SizedBox(
-              height: 36,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final category = categories[index];
-                  final isSelected = selectedCategory == category;
-                  return GestureDetector(
-                    onTap: () => setState(() => selectedCategory = category),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: isSelected ? kPrimaryBlue : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: kPrimaryBlue),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        category,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : kPrimaryBlue,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 13,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            hintText: "Cari",
+                            hintStyle: TextStyle(color: Colors.grey),
+                            border: InputBorder.none,
+                            isCollapsed: true,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
+            ],
+          ),
+
+            const SizedBox(height: 12),
+
+           
+            
 
             // 🧾 List destinasi
             Expanded(
@@ -154,10 +107,10 @@ class _SearchPageState extends State<SearchPage> {
           ],
         ),
       ),
-      // bottomNavigationBar: CustomBottomNavBar(
-      //   currentIndex: _currentIndex,
-      //   onTap: _onNavBarTap,
-      // ),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _onNavBarTap,
+      ),
     );
   }
 }
@@ -199,8 +152,7 @@ class DestinationCard extends StatelessWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Image.asset(
                   imagePath,
                   height: 140,

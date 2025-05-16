@@ -12,9 +12,11 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea( // <- ini penting untuk menghindari overflow di bawah
+    return SafeArea(
+      // <- ini penting untuk menghindari overflow di bawah
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // aman
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // aman
         child: Container(
           height: 70, // pastikan tinggi ini cukup
           decoration: BoxDecoration(
@@ -37,7 +39,7 @@ class CustomBottomNavBar extends StatelessWidget {
               onTap: onTap,
               type: BottomNavigationBarType.fixed,
               selectedItemColor: Colors.white,
-              unselectedItemColor: Colors.grey[400],
+              unselectedItemColor: Colors.grey[700],
               showSelectedLabels: false,
               showUnselectedLabels: false,
               items: const [
