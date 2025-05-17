@@ -12,6 +12,21 @@ class _AccountPageState extends State<AccountPage> {
   int _currentIndex = 3; // Set the initial index to 3 for the Account page
   void _onNavBarTap(int index) {
     setState(() => _currentIndex = index);
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacementNamed(context, '/home');
+        break;
+      case 1:
+        Navigator.pushReplacementNamed(context, '/search');
+        break;
+      case 2:
+        Navigator.pushReplacementNamed(context, '/saved');
+        break;
+      case 3:
+        Navigator.pushReplacementNamed(context, '/account');
+        break;
+    }
   }
 
   @override
@@ -177,10 +192,10 @@ class _AccountPageState extends State<AccountPage> {
           )
         ],
       ),
-      //       bottomNavigationBar: CustomBottomNavBar(
-      //   currentIndex: _currentIndex,
-      //   onTap: _onNavBarTap,
-      // ),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _onNavBarTap,
+      ),
     );
   }
 }

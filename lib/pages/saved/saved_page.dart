@@ -11,11 +11,25 @@ class SavedPage extends StatefulWidget {
 const Color kPrimaryBlue = Color(0xFF0072BC);
 
 class _SavedPageState extends State<SavedPage> {
-  int _currentIndex = 2; 
-
+  int _currentIndex = 2;
 
   void _onNavBarTap(int index) {
     setState(() => _currentIndex = index);
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacementNamed(context, '/home');
+        break;
+      case 1:
+        Navigator.pushReplacementNamed(context, '/search');
+        break;
+      case 2:
+        Navigator.pushReplacementNamed(context, '/saved');
+        break;
+      case 3:
+        Navigator.pushReplacementNamed(context, '/account');
+        break;
+    }
   }
 
   @override
@@ -43,41 +57,38 @@ class _SavedPageState extends State<SavedPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 🔍 Search bar & filter
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  height: 45,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.search, color: Colors.grey),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          decoration: const InputDecoration(
-                            hintText: "Cari",
-                            hintStyle: TextStyle(color: Colors.grey),
-                            border: InputBorder.none,
-                            isCollapsed: true,
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 45,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              hintText: "Cari",
+                              hintStyle: TextStyle(color: Colors.grey),
+                              border: InputBorder.none,
+                              isCollapsed: true,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
             const SizedBox(height: 12),
-
-           
-            
 
             // 🧾 List destinasi
             Expanded(
@@ -152,7 +163,8 @@ class DestinationCard extends StatelessWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Image.asset(
                   imagePath,
                   height: 140,

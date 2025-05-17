@@ -1,17 +1,69 @@
 import "package:flutter/material.dart";
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/pages/register/register_page.dart';
+import 'package:j_tour/providers/auth_provider.dart';
+import 'package:j_tour/main_page.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   bool _passwordVisible = false;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   static const Color primaryColor = Color.fromRGBO(0, 111, 185, 1);
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      setState(() {
+        _errorMessage = 'Email dan password tidak boleh kosong';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await ref.read(authServiceProvider).signInWithEmailAndPassword(
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainPage()),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Login gagal: ${e.toString()}';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   InputDecoration _buildInputDecoration({
     required String hintText,
@@ -104,6 +156,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   // Input field for email
                   TextFormField(
+                    controller: _emailController,
                     decoration: _buildInputDecoration(
                       hintText: 'Email',
                       prefixIcon: Icons.email_outlined,
@@ -114,6 +167,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   // Input field for password
                   TextFormField(
+                    controller: _passwordController,
                     obscureText: !_passwordVisible,
                     decoration: _buildInputDecoration(
                       hintText: 'Password',
@@ -134,13 +188,22 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+
                   const SizedBox(height: 24),
 
                   // Login button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: _isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
@@ -149,13 +212,15 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      child: const Text(
-                        'Masuk',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Masuk',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
                   ),
 

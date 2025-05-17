@@ -190,7 +190,7 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
       facilities: _facilities,
       image: _selectedImage?.path ?? widget.place.image,
       isLocalImage: _selectedImage != null ? true : widget.place.isLocalImage,
-      additionalImages: null,
+      additionalImages: _additionalImages.isEmpty ? null : _additionalImages,
     );
 
     if (_isNewPlace) {
@@ -245,16 +245,25 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
                               child: Image.file(_selectedImage!,
                                   fit: BoxFit.cover),
                             )
-                          : widget.place.isLocalImage
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.file(File(widget.place.image),
-                                      fit: BoxFit.cover),
-                                )
-                              : ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(widget.place.image,
-                                      fit: BoxFit.cover),
+                          : widget.place.image.isNotEmpty && !_isNewPlace
+                              ? widget.place.isLocalImage
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.file(
+                                          File(widget.place.image),
+                                          fit: BoxFit.cover),
+                                    )
+                                  : ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.asset(widget.place.image,
+                                          fit: BoxFit.cover),
+                                    )
+                              : const Center(
+                                  child: Icon(
+                                    Icons.image_outlined,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                     ),
                     Positioned(

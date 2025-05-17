@@ -110,6 +110,19 @@ class Place {
     };
   }
 
+  factory Place.empty() {
+    return Place(
+      id: DateTime.now().millisecondsSinceEpoch.toString(), // Temporary ID
+      name: '',
+      location: '',
+      image: 'assets/images/placeholder.jpg', // Use a placeholder image
+      price: 0,
+      rating: 4.0, // Default rating
+      facilities: const ['Area Parkir', 'Toilet'], // Default facilities
+      isLocalImage: false,
+    );
+  }
+
   @override
   String toString() {
     return 'Place(id: $id, name: $name, location: $location, rating: $rating, price: $price, image: $image, isLocalImage: $isLocalImage, description: $description, hours: $weekdaysHours/$weekendHours, weekendPrice: $weekendPrice, facilities: $facilities, reviewCount: $reviewCount, additionalImages: $additionalImages)';

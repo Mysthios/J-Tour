@@ -154,28 +154,17 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
   }
 
   Future<void> _showAddPlaceDialog(BuildContext context) async {
-    // Create a new empty place with default values
-    final newPlace = Place(
-      name: 'Tempat Wisata Baru',
-      location: 'Lokasi',
-      price: 15000,
-      rating: 4.5,
-      image: 'assets/images/papuma.jpeg', // Default placeholder image
-      isLocalImage: false,
-      description: 'Deskripsi tempat wisata',
-      weekdaysHours: '06:00 - 17:00',
-      weekendHours: '06:00 - 18:00',
-      weekendPrice: 25000,
-      facilities: ['Area Parkir', 'Toilet'],
-      reviewCount: 0,
-      additionalImages: [], // Empty list for additional images
-    );
-
-    // Navigate to the edit page with the new place
+    // Create a new empty place
+    final newPlace = Place.empty();
+    
+    // Navigate to the edit page with isNew set to true
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditPlacePage(place: newPlace),
+        builder: (context) => EditPlacePage(
+          place: newPlace,
+          isNew: true, // This is the key change
+        ),
       ),
     );
 
@@ -192,7 +181,10 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditPlacePage(place: place),
+        builder: (context) => EditPlacePage(
+          place: place,
+          // isNew defaults to false, so we don't need to specify it
+        ),
       ),
     );
 
