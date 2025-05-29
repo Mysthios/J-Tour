@@ -1,24 +1,29 @@
 [
-    {
-      "name": "Pantai Papuma",
-      "location": "Jember",
-      "rating": 4.7,
-      "price": 15,
-      "image": "assets/images/Papuma.jpeg"
-    },
-    {
-      "name": "Air Terjun Tancak",
-      "location": "Jember",
-      "rating": 4.5,
-      "price": 10,
-      "image": "assets/images/tancak.jpg"
-    },
-    {
-      "name": "Kawah Wurung",
-      "location": "Jember",
-      "rating": 4.6,
-      "price": 12,
-      "image": "assets/images/wurung.jpg"
-    }
-  ]
-  
+  {
+    "name": "Pantai Papuma",
+    "location": "Jember",
+    "rating": 4.7,
+    "price": 15000,
+    "image": "assets/images/Papuma.jpeg",
+    "latitude": -8.399641,
+    "longitude": 113.596618
+  },
+  {
+    "name": "Air Terjun Tancak",
+    "location": "Jember",
+    "rating": 4.5,
+    "price": 10000,
+    "image": "assets/images/tancak.jpg",
+    "latitude": -8.031238,
+    "longitude": 113.658997
+  },
+  {
+    "name": "Kawah Wurung",
+    "location": "Jember",
+    "rating": 4.6,
+    "price": 12000,
+    "image": "assets/images/wurung.jpg",
+    "latitude": -7.965155,
+    "longitude": 113.216805
+  }
+]

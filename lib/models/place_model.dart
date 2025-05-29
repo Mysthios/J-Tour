@@ -2,21 +2,23 @@ import 'dart:convert';
 import 'dart:io';
 
 class Place {
-  final String id; // Added ID for CRUD operations
+  final String id;
   final String name;
   final String location;
   final double rating;
   final int price;
   final String image;
-  final bool
-      isLocalImage; // To differentiate between asset images and locally stored images
-  final String? description; // Deskripsi wisata
-  final String? weekdaysHours; // Jam operasi weekday (06:00 - 17:00)
-  final String? weekendHours; // Jam operasi weekend (06:00 - 18:00)
-  final int? weekendPrice; // Harga akhir pekan
-  final List<String>? facilities; // Fasilitas (Area Parkir, Toilet dll)
-  final int? reviewCount; // Jumlah ulasan
-  final List<String>? additionalImages; // Additional images for gallery
+  final bool isLocalImage;
+  final String? description;
+  final String? weekdaysHours;
+  final String? weekendHours;
+  final int? weekendPrice;
+  final List<String>? facilities;
+  final int? reviewCount;
+  final List<String>? additionalImages;
+  final double? latitude;
+  final double? longitude;
+
   Place({
     String? id,
     required this.name,
@@ -32,7 +34,10 @@ class Place {
     this.facilities,
     this.reviewCount,
     this.additionalImages,
+    required this.latitude,
+    required this.longitude,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
+
   Place copyWith({
     String? id,
     String? name,
@@ -48,6 +53,8 @@ class Place {
     List<String>? facilities,
     int? reviewCount,
     List<String>? additionalImages,
+    double? latitude,
+    double? longitude,
   }) {
     return Place(
       id: id ?? this.id,
@@ -64,6 +71,8 @@ class Place {
       facilities: facilities ?? this.facilities,
       reviewCount: reviewCount ?? this.reviewCount,
       additionalImages: additionalImages ?? this.additionalImages,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 
@@ -72,25 +81,22 @@ class Place {
       id: json['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: json['name'],
       location: json['location'],
-      rating: json['rating'].toDouble(),
-      price: (json['price'] is int)
-          ? json['price']
-          : (json['price'] * 1000).toInt(), // Convert to thousands if needed
+      rating: (json['rating'] as num).toDouble(),
+      price: (json['price'] is int) ? json['price'] : (json['price'] * 1000).toInt(),
       image: json['image'],
       isLocalImage: json['isLocalImage'] ?? false,
       description: json['description'],
       weekdaysHours: json['weekdaysHours'],
       weekendHours: json['weekendHours'],
       weekendPrice: json['weekendPrice'],
-      facilities: json['facilities'] != null
-          ? List<String>.from(json['facilities'])
-          : null,
+      facilities: json['facilities'] != null ? List<String>.from(json['facilities']) : null,
       reviewCount: json['reviewCount'],
-      additionalImages: json['additionalImages'] != null
-          ? List<String>.from(json['additionalImages'])
-          : null,
+      additionalImages: json['additionalImages'] != null ? List<String>.from(json['additionalImages']) : null,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -105,13 +111,22 @@ class Place {
       'weekendHours': weekendHours,
       'weekendPrice': weekendPrice,
       'facilities': facilities,
-      'additionalImages': additionalImages,
       'reviewCount': reviewCount,
+      'additionalImages': additionalImages,
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 
   @override
   String toString() {
-    return 'Place(id: $id, name: $name, location: $location, rating: $rating, price: $price, image: $image, isLocalImage: $isLocalImage, description: $description, hours: $weekdaysHours/$weekendHours, weekendPrice: $weekendPrice, facilities: $facilities, reviewCount: $reviewCount, additionalImages: $additionalImages)';
+    return 'Place(id: $id, name: $name, location: $location, rating: $rating, price: $price, image: $image, isLocalImage: $isLocalImage, description: $description, weekdaysHours: $weekdaysHours, weekendHours: $weekendHours, weekendPrice: $weekendPrice, facilities: $facilities, reviewCount: $reviewCount, additionalImages: $additionalImages, latitude: $latitude, longitude: $longitude)';
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is Place && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

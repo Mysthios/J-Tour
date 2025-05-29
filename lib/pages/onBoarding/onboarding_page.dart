@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:j_tour/pages/homepage/homepage.dart';
 import 'package:j_tour/pages/login/login_page.dart';
+import 'package:j_tour/pages/register/register_page.dart';
 
 class OnboardingPage extends StatelessWidget {
   const OnboardingPage({super.key});
@@ -71,7 +72,7 @@ class OnboardingPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Spacer(), // Untuk mendorong tombol ke atas sedikit
+                  const Spacer(), 
                   
                   // Tombol
                   SizedBox(
@@ -82,7 +83,7 @@ class OnboardingPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const HomePage(),
+                            builder: (context) => const RegisterPage(),
                           ),
                         );
                       },

@@ -56,34 +56,34 @@ class CustomBottomNavBar extends StatelessWidget {
 
   static const List<BottomNavigationBarItem> _userItems = [
     BottomNavigationBarItem(
-      icon: Icon(Icons.home_rounded, size: 24),
+      icon: Icon(Icons.home_rounded, size: 30),
       label: 'Home',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.search_rounded, size: 24),
+      icon: Icon(Icons.search_rounded, size: 30),
       label: 'Search',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.bookmark_border_rounded, size: 24),
+      icon: Icon(Icons.bookmark_border_rounded, size: 30),
       label: 'Bookmark',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.person_rounded, size: 24),
+      icon: Icon(Icons.person_rounded, size: 30),
       label: 'Profile',
     ),
   ];
 
   static const List<BottomNavigationBarItem> _adminItems = [
     BottomNavigationBarItem(
-      icon: Icon(Icons.home_rounded, size: 24),
+      icon: Icon(Icons.home_rounded, size: 30),
       label: 'Home',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.search_rounded, size: 24),
+      icon: Icon(Icons.search_rounded, size: 30),
       label: 'Search',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.person_rounded, size: 24),
+      icon: Icon(Icons.person_rounded, size: 30),
       label: 'Profile',
     ),
   ];

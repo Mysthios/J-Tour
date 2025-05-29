@@ -181,7 +181,9 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
       weekendPrice: 25000,
       facilities: ['Area Parkir', 'Toilet'],
       reviewCount: 0,
-      additionalImages: [], // Empty list for additional images
+      additionalImages: [],
+      latitude: null, // atau bisa isi default seperti -8.1725
+      longitude: null, // atau bisa isi default seperti 113.7016 // Empty list for additional images
     );
 
     // Navigate to the edit page with the new place

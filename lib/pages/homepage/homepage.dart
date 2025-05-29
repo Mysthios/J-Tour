@@ -36,62 +36,95 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _currentIndex = index;
     });
-    // Tambahkan navigasi sesuai kebutuhan
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    final horizontalPadding = screenWidth * 0.04;
+    final titleFontSize = screenWidth * 0.045;
+    final logoHeight = screenHeight * 0.06;
+    final weatherHeight = screenHeight * 0.055;
+
     return Scaffold(
       backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          toolbarHeight: 80, // Tinggikan AppBar
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        toolbarHeight: screenHeight * 0.11,
+        automaticallyImplyLeading: false,
+        title: Padding(
+          padding: EdgeInsets.only(left: horizontalPadding * 0.5, right: horizontalPadding),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Image.asset(
-                'assets/images/Label.jpg',
-                height: 50,
+              Transform.translate(
+                offset: const Offset(-5, 0),  // geser ke kiri 5 pixel
+                child: Image.asset(
+                  'assets/images/Label.jpg',
+                  height: logoHeight,
+                ),
               ),
-              const SizedBox(height: 4),
-              const WeatherHeader(),
+              SizedBox(
+                height: weatherHeight,
+                child: const WeatherHeader(),
+              ),
             ],
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.notifications_none),
-              onPressed: () {},
-            ),
-          ],
         ),
+
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 16),
-            const Text(
-              "Wisata Populer",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            SizedBox(height: screenHeight * 0.02),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Wisata Populer",
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text("Lihat Semua"),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
             SizedBox(
-              height: 180,
+              height: screenHeight * 0.26,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: places.length,
+                itemCount: places.length > 2 ? 2 : places.length,
                 itemBuilder: (context, index) {
                   return PopularPlaceCard(place: places[index]);
                 },
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              "Rekomendasi Wisata",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            SizedBox(height: screenHeight * 0.03),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Rekomendasi Untuk Anda",
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text("Lihat Semua"),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
             ListView.builder(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
@@ -100,6 +133,7 @@ class _HomePageState extends State<HomePage> {
                 return PlaceCard(place: places[index]);
               },
             ),
+            SizedBox(height: screenHeight * 0.04),
           ],
         ),
       ),

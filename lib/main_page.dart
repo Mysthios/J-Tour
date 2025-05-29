@@ -15,7 +15,7 @@ class MainPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(bottomNavBarProvider);
 
-    String role = "admin"; // Ganti dengan logika untuk mendapatkan role user
+    String role = "user"; // Ganti dengan logika untuk mendapatkan role user
     List<Widget> pages = [];
     if (role == "admin") {
       pages = [
