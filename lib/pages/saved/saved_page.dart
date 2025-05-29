@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:j_tour/pages/homepage/widgets/bottom_navbar.dart';
 
 class SavedPage extends StatefulWidget {
   const SavedPage({super.key});
@@ -107,10 +106,7 @@ class _SavedPageState extends State<SavedPage> {
           ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavBarTap,
-      ),
+
     );
   }
 }

@@ -16,7 +16,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Place> places = [];
-  int _currentIndex = 0; // ✅ Tambahkan ini
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -32,7 +32,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // ✅ Fungsi ini untuk handle tap pada BottomNavBar
   void _onNavBarTap(int index) {
     setState(() {
       _currentIndex = index;
@@ -44,17 +43,28 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const WeatherHeader(),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          toolbarHeight: 80, // Tinggikan AppBar
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.asset(
+                'assets/images/Label.jpg',
+                height: 50,
+              ),
+              const SizedBox(height: 4),
+              const WeatherHeader(),
+            ],
           ),
-        ],
-      ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_none),
+              onPressed: () {},
+            ),
+          ],
+        ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
@@ -62,8 +72,8 @@ class _HomePageState extends State<HomePage> {
           children: [
             const SizedBox(height: 16),
             const Text(
-              "Popular Place",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              "Wisata Populer",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -78,8 +88,8 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 20),
             const Text(
-              "Recommendation",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              "Rekomendasi Wisata",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             ListView.builder(
@@ -93,10 +103,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      // bottomNavigationBar: CustomBottomNavBar(
-      //   currentIndex: _currentIndex, // ✅ gunakan variabel ini
-      //   onTap: _onNavBarTap, // ✅ dan fungsi ini
-      // ),
     );
   }
 }

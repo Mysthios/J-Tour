@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.j_tour"
-    compileSdk = ^3.29.3
+    compileSdk = 33
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -38,6 +38,17 @@ android {
         }
     }
 }
+
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7")
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.10.0")
+    
+    // Tambahkan ini agar FlutterActivity bisa dikenali
+    implementation("io.flutter:flutter_embedding_debug:1.0.0")
+}
+
 
 flutter {
     source = "../.."
