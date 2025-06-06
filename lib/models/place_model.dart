@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-
 class Place {
   final String id;
   final String name;
@@ -18,6 +15,7 @@ class Place {
   final List<String>? additionalImages;
   final double? latitude;
   final double? longitude;
+  final String? category;
 
   Place({
     String? id,
@@ -33,6 +31,7 @@ class Place {
     this.weekendPrice,
     this.facilities,
     this.reviewCount,
+    this.category,
     this.additionalImages,
     required this.latitude,
     required this.longitude,
@@ -55,6 +54,7 @@ class Place {
     List<String>? additionalImages,
     double? latitude,
     double? longitude,
+    String? category,
   }) {
     return Place(
       id: id ?? this.id,
@@ -73,6 +73,7 @@ class Place {
       additionalImages: additionalImages ?? this.additionalImages,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      category: category ?? this.category,
     );
   }
 
@@ -94,6 +95,7 @@ class Place {
       additionalImages: json['additionalImages'] != null ? List<String>.from(json['additionalImages']) : null,
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
+      category: json['category'],
     );
   }
 
@@ -115,12 +117,13 @@ class Place {
       'additionalImages': additionalImages,
       'latitude': latitude,
       'longitude': longitude,
+      'category': category,
     };
   }
 
   @override
   String toString() {
-    return 'Place(id: $id, name: $name, location: $location, rating: $rating, price: $price, image: $image, isLocalImage: $isLocalImage, description: $description, weekdaysHours: $weekdaysHours, weekendHours: $weekendHours, weekendPrice: $weekendPrice, facilities: $facilities, reviewCount: $reviewCount, additionalImages: $additionalImages, latitude: $latitude, longitude: $longitude)';
+    return 'Place(id: $id, name: $name, location: $location, rating: $rating, price: $price, image: $image, isLocalImage: $isLocalImage, description: $description, weekdaysHours: $weekdaysHours, weekendHours: $weekendHours, weekendPrice: $weekendPrice, facilities: $facilities, reviewCount: $reviewCount, additionalImages: $additionalImages, latitude: $latitude, longitude: $longitude, category: $category)';
   }
 
   @override

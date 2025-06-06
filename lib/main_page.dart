@@ -7,6 +7,7 @@ import 'package:j_tour/pages/search/search_page.dart';
 import 'package:j_tour/pages/account/account_page.dart';
 import 'package:j_tour/pages_admin/homepage/homepage.dart';
 import 'package:j_tour/providers/bottom_navbar_provider.dart';
+import 'package:j_tour/providers/search_category_provider.dart';
 
 class MainPage extends ConsumerWidget {
   const MainPage({super.key});
@@ -25,11 +26,17 @@ class MainPage extends ConsumerWidget {
       ];
     } else if (role == "user") {
       pages = [
-        const HomePage(),
-        const SearchPage(),
+        HomePage(
+          onNavigateToSearch: (category) {
+            ref.read(searchCategoryProvider.notifier).state = category;
+            ref.read(bottomNavBarProvider.notifier).updateIndex(1); // ke SearchPage
+          },
+        ),
+        const SearchPage(), // Pastikan ini pakai Riverpod
         const SavedPage(),
         const AccountPage(),
       ];
+
     }
 
     // Safety check jika index out of range saat role berubah

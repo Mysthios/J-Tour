@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:j_tour/pages/login/login_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -48,239 +49,268 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.35,
-              width: double.infinity,
-              child: Image.asset(
-                'assets/images/danau.jpg',
-                fit: BoxFit.cover,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.black,
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          top: false,
+          child: Stack(
+            children: [
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.35,
+                width: double.infinity,
+                child: Image.asset(
+                  'assets/images/danau.jpg',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[300],
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: 50,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: DraggableScrollableSheet(
-                initialChildSize: 0.72,
-                minChildSize: 0.5,
-                maxChildSize: 0.95,
-                builder: (context, scrollController) {
-                  return Container(
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                    ),
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Center(
-                              child: Container(
-                                width: 40,
-                                height: 4,
-                                margin: const EdgeInsets.only(bottom: 12),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[400],
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ),
-                            const Text(
-                              "Daftar Akun",
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              "Daftar akun Anda dan buat liburan Anda lebih mudah dan nyaman",
-                              style: TextStyle(fontSize: 13, color: Colors.black54),
-                            ),
-                            const SizedBox(height: 20),
-                            TextFormField(
-                              controller: _emailController,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Email tidak boleh kosong';
-                                }
-                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                  return 'Format email tidak valid';
-                                }
-                                return null;
-                              },
-                              decoration: _buildInputDecoration(
-                                hintText: 'Email',
-                                prefixIcon: Icons.email_outlined,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _nameController,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Nama tidak boleh kosong';
-                                }
-                                return null;
-                              },
-                              decoration: _buildInputDecoration(
-                                hintText: 'Nama',
-                                prefixIcon: Icons.person_outline,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: !_passwordVisible,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Password tidak boleh kosong';
-                                }
-                                if (value.length < 6) {
-                                  return 'Password minimal 6 karakter';
-                                }
-                                return null;
-                              },
-                              decoration: _buildInputDecoration(
-                                hintText: 'Password',
-                                prefixIcon: Icons.lock_outline,
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _passwordVisible
-                                        ? Icons.remove_red_eye_outlined
-                                        : Icons.visibility_off_outlined,
-                                    color: primaryColor,
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: DraggableScrollableSheet(
+                  initialChildSize: 0.72,
+                  minChildSize: 0.72,
+                  maxChildSize: 0.85,
+                  snap: true,
+                  snapSizes: const [0.72, 0.85],
+                  builder: (context, scrollController) {
+                    return Container(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                      ),
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        physics: const ClampingScrollPhysics(),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 4,
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[400],
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _passwordVisible = !_passwordVisible;
-                                    });
-                                  },
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _confirmPasswordController,
-                              obscureText: !_passwordConfirmVisible,
-                              validator: (value) {
-                                if (value != _passwordController.text) {
-                                  return 'Konfirmasi password tidak cocok';
-                                }
-                                return null;
-                              },
-                              decoration: _buildInputDecoration(
-                                hintText: 'Konfirmasi Password',
-                                prefixIcon: Icons.lock_outline,
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _passwordConfirmVisible
-                                        ? Icons.remove_red_eye_outlined
-                                        : Icons.visibility_off_outlined,
-                                    color: primaryColor,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _passwordConfirmVisible = !_passwordConfirmVisible;
-                                    });
-                                  },
+                              const Text(
+                                "Daftar Akun",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 20),
-                            ElevatedButton(
-                              onPressed: () {
-                                if (_formKey.currentState!.validate()) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Pendaftaran gagal. Coba lagi.'),
-                                      backgroundColor: Colors.redAccent,
+                              const SizedBox(height: 4),
+                              const Text(
+                                "Daftar akun Anda dan buat liburan Anda lebih mudah dan nyaman",
+                                style: TextStyle(fontSize: 13, color: Colors.black54),
+                              ),
+                              const SizedBox(height: 20),
+                              TextFormField(
+                                controller: _emailController,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Email tidak boleh kosong';
+                                  }
+                                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                    return 'Format email tidak valid';
+                                  }
+                                  return null;
+                                },
+                                decoration: _buildInputDecoration(
+                                  hintText: 'Email',
+                                  prefixIcon: Icons.email_outlined,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _nameController,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Nama tidak boleh kosong';
+                                  }
+                                  return null;
+                                },
+                                decoration: _buildInputDecoration(
+                                  hintText: 'Nama',
+                                  prefixIcon: Icons.person_outline,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: !_passwordVisible,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Password tidak boleh kosong';
+                                  }
+                                  if (value.length < 6) {
+                                    return 'Password minimal 6 karakter';
+                                  }
+                                  return null;
+                                },
+                                decoration: _buildInputDecoration(
+                                  hintText: 'Password',
+                                  prefixIcon: Icons.lock_outline,
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _passwordVisible
+                                          ? Icons.remove_red_eye_outlined
+                                          : Icons.visibility_off_outlined,
+                                      color: primaryColor,
                                     ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                              ),
-                              child: const Text(
-                                'Daftar',
-                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            const Center(
-                              child: Text(
-                                "atau daftar dengan",
-                                style: TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                  side: const BorderSide(color: Colors.black12),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Image.asset('assets/images/google.png', height: 20),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    'Daftar dengan Google',
-                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                    onPressed: () {
+                                      setState(() {
+                                        _passwordVisible = !_passwordVisible;
+                                      });
+                                    },
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text("Sudah punya akun? ", style: TextStyle(color: Colors.black54)),
-                                GestureDetector(
-                                  onTap: () {
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _confirmPasswordController,
+                                obscureText: !_passwordConfirmVisible,
+                                validator: (value) {
+                                  if (value != _passwordController.text) {
+                                    return 'Konfirmasi password tidak cocok';
+                                  }
+                                  return null;
+                                },
+                                decoration: _buildInputDecoration(
+                                  hintText: 'Konfirmasi Password',
+                                  prefixIcon: Icons.lock_outline,
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _passwordConfirmVisible
+                                          ? Icons.remove_red_eye_outlined
+                                          : Icons.visibility_off_outlined,
+                                      color: primaryColor,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _passwordConfirmVisible = !_passwordConfirmVisible;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (_formKey.currentState!.validate()) {
                                     Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(builder: (context) => const LoginPage()),
                                     );
-                                  },
-                                  child: const Text(
-                                    "Login",
-                                    style: TextStyle(
-                                      color: Colors.lightBlueAccent,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.black,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ],
+                                child: const Text(
+                                  'Daftar',
+                                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const Center(
+                                child: Text(
+                                  "atau daftar dengan",
+                                  style: TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: () {},
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.black,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    side: const BorderSide(color: Colors.black12),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/images/google.png',
+                                      height: 20,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return const Icon(Icons.g_mobiledata, size: 20);
+                                      },
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Daftar dengan Google',
+                                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text("Sudah punya akun? ", style: TextStyle(color: Colors.black54)),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Login",
+                                      style: TextStyle(
+                                        color: Colors.lightBlueAccent,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? 100 : 20),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

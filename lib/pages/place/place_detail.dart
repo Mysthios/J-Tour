@@ -1,11 +1,11 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:j_tour/pages/place/reviews_page.dart';
+import 'package:j_tour/pages/place/write_review_page.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:j_tour/models/place_model.dart';
-import 'package:j_tour/providers/place_provider.dart';
 import 'package:j_tour/providers/saved_provider.dart';
 import 'package:j_tour/pages/map/map_page.dart';
 
@@ -47,6 +47,24 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
     }
   }
 
+  void _navigateToReviews() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReviewsPage(place: widget.place),
+      ),
+    );
+  }
+
+  void _navigateToWriteReview() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WriteReviewPage(place: widget.place),
+      ),
+    );
+  }
+
   void _navigateToMap() {
     Navigator.push(
       context,
@@ -70,25 +88,24 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Image Carousel with overlay buttons
+          // Image Carousel with overlay buttons and indicators
           Stack(
             children: [
-              Container(
-                height: 350,
+              SizedBox(
+                height: 280,
                 child: CarouselSlider(
                   options: CarouselOptions(
-                    height: 350,
+                    height: 280,
                     viewportFraction: 1.0,
+                    autoPlay: true,
+                    autoPlayInterval: Duration(seconds: 4),
                     onPageChanged: (index, _) {
                       setState(() => _currentImageIndex = index);
                     },
                   ),
                   items: _images.map((img) {
-                    return ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(24),
-                        bottomRight: Radius.circular(24),
-                      ),
+                    return Container(
+                      width: double.infinity,
                       child: Image.asset(
                         img,
                         width: double.infinity,
@@ -98,6 +115,8 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
                   }).toList(),
                 ),
               ),
+
+              // Top overlay buttons
               SafeArea(
                 child: Padding(
                   padding:
@@ -107,12 +126,12 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black.withOpacity(0.4),
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.arrow_back,
-                              color: Colors.white, size: 22),
+                              color: Colors.white, size: 20),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
@@ -120,7 +139,7 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withOpacity(0.4),
                               shape: BoxShape.circle,
                             ),
                             child: IconButton(
@@ -129,19 +148,19 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
                                       ? Icons.bookmark
                                       : Icons.bookmark_outline,
                                   color: Colors.white,
-                                  size: 22),
+                                  size: 20),
                               onPressed: _toggleSavePlace,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withOpacity(0.4),
                               shape: BoxShape.circle,
                             ),
                             child: IconButton(
                               icon: const Icon(Icons.share,
-                                  color: Colors.white, size: 22),
+                                  color: Colors.white, size: 20),
                               onPressed: _sharePlace,
                             ),
                           ),
@@ -151,326 +170,385 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
                   ),
                 ),
               ),
+
+              // Carousel indicators
+              if (_images.length > 1)
+                Positioned(
+                  bottom: 16,
+                  left: 16,
+                  child: Row(
+                    children: _images.asMap().entries.map((entry) {
+                      return Container(
+                        width: _currentImageIndex == entry.key ? 20 : 6,
+                        height: 6,
+                        margin: const EdgeInsets.only(right: 4),
+                        decoration: BoxDecoration(
+                          color: _currentImageIndex == entry.key
+                              ? Colors.white
+                              : Colors.white.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
             ],
           ),
 
           // Content Area
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
-                  Text(
-                    widget.place.name,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Location
-                  Row(
-                    children: [
-                      Icon(Icons.location_on,
-                          size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        widget.place.location,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
+                  // Main Info Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title and Location
+                        Text(
+                          widget.place.name,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                        const SizedBox(height: 6),
 
-                  // Rating and Reviews
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.orange, size: 18),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${widget.place.rating}",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                        Row(
+                          children: [
+                            Icon(Icons.location_on,
+                                size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            Text(
+                              widget.place.location,
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        " (438 Ulasan)",
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
+                        const SizedBox(height: 12),
+
+                        // Rating and Review
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: _navigateToReviews,
+                              child: Row(
+                                children: [
+                                  Icon(Icons.star,
+                                      color: Colors.orange, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${widget.place.rating}",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  Text(
+                                    " (438 Ulasan)",
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: _navigateToWriteReview,
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.blue,
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text(
+                                "Beri Ulasan",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                        const SizedBox(height: 16),
 
-                  // Review Button
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () {},
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.blue,
-                        padding: EdgeInsets.zero,
-                      ),
-                      child: const Text(
-                        "Beri Ulasan",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                        // Schedule and Price Cards
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Weekdays:",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.access_time,
+                                            size: 12, color: Colors.grey[600]),
+                                        const SizedBox(width: 4),
+                                        const Text(
+                                          "06:00 - 17:00",
+                                          style: TextStyle(fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "Rp.15.000 - 20.000",
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    Text(
+                                      "/Orang",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Weekend:",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.access_time,
+                                            size: 12, color: Colors.grey[600]),
+                                        const SizedBox(width: 4),
+                                        const Text(
+                                          "06:00 - 18:00",
+                                          style: TextStyle(fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "Rp.30.000",
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    Text(
+                                      "/Orang",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: 16),
+
+                        // Contact Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _openWhatsApp,
+                            icon: const Icon(Icons.phone,
+                                color: Colors.white, size: 16),
+                            label: const Text(
+                              "Hubungi",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
 
-                  // Weekdays Schedule
-                  const Text(
-                    "Weekdays:",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-
-                  Row(
-                    children: [
-                      Icon(Icons.access_time,
-                          size: 16, color: Colors.grey[700]),
-                      const SizedBox(width: 8),
-                      const Text(
-                        "06:00 - 17:00",
-                        style: TextStyle(fontSize: 14),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Price
-                  Text(
-                    "Rp.15.000 - 20.000/Orang",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Weekend Schedule
-                  const Text(
-                    "Weekend:",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-
-                  Row(
-                    children: [
-                      Icon(Icons.access_time,
-                          size: 16, color: Colors.grey[700]),
-                      const SizedBox(width: 8),
-                      const Text(
-                        "06:00 - 18:00",
-                        style: TextStyle(fontSize: 14),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  Text(
-                    "Rp.30.000/Orang",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                  // Description Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Deskripsi",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.place.description ??
+                              "Pantai Papuma adalah sebuah pantai yang menjadi tempat wisata di Kabupaten Jember, Provinsi Jawa Timur, Indonesia. Nama Papuma sendiri sebenarnya adalah singkatan dari \"Pasir Putih Malikan\".",
+                          style: const TextStyle(
+                            height: 1.4,
+                            fontSize: 13,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
 
-                  // Contact Button
+                  // Facilities Section
                   Container(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _openWhatsApp,
-                      icon: const Icon(Icons.phone,
-                          color: Colors.white, size: 18),
-                      label: const Text(
-                        "Hubungi",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Description Section
-                  const Text(
-                    "Deskripsi",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.place.description ??
-                        "Pantai Papuma adalah sebuah pantai yang menjadi tempat wisata di Kabupaten Jember, Provinsi Jawa Timur, Indonesia. Nama Papuma sendiri sebenarnya adalah singkatan dari \"Pasir Putih Malikan\".",
-                    style: const TextStyle(
-                      height: 1.5,
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Facilities Section
-                  const Text(
-                    "Fasilitas",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  if (widget.place.facilities != null &&
-                      widget.place.facilities!.isNotEmpty)
-                    Column(
-                      children: widget.place.facilities!.map((facility) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 16,
-                                color: Colors.green,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                facility,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    )
-                  else
-                    Column(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Icon(Icons.check_circle,
-                                size: 16, color: Colors.green),
-                            const SizedBox(width: 12),
-                            const Text("Area Parkir",
-                                style: TextStyle(fontSize: 14)),
-                          ],
+                        const Text(
+                          "Fasilitas",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.check_circle,
-                                size: 16, color: Colors.green),
-                            const SizedBox(width: 12),
-                            const Text("Toilet dan Kamar Mandi",
-                                style: TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.check_circle,
-                                size: 16, color: Colors.green),
-                            const SizedBox(width: 12),
-                            const Text("Mushola",
-                                style: TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.check_circle,
-                                size: 16, color: Colors.green),
-                            const SizedBox(width: 12),
-                            const Text("Warung Makan",
-                                style: TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.check_circle,
-                                size: 16, color: Colors.green),
-                            const SizedBox(width: 12),
-                            const Text("Area Camping",
-                                style: TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.check_circle,
-                                size: 16, color: Colors.green),
-                            const SizedBox(width: 12),
-                            const Text("Penginapan",
-                                style: TextStyle(fontSize: 14)),
-                          ],
-                        ),
+                        const SizedBox(height: 12),
+
+                        // Facilities Grid
+                        if (widget.place.facilities != null &&
+                            widget.place.facilities!.isNotEmpty)
+                          Wrap(
+                            spacing: 16,
+                            runSpacing: 8,
+                            children: widget.place.facilities!.map((facility) {
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.check_circle,
+                                    size: 14,
+                                    color: Colors.blue,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    facility,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          )
+                        else
+                          Wrap(
+                            spacing: 16,
+                            runSpacing: 8,
+                            children: [
+                              "Area Parkir",
+                              "Toilet dan Kamar Mandi",
+                              "Mushola",
+                              "Warung Makan",
+                              "Area Camping",
+                              "Penginapan"
+                            ].map((facility) {
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.check_circle,
+                                      size: 14, color: Colors.blue),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    facility,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
                       ],
                     ),
-
-                  const SizedBox(height: 32),
+                  ),
+                  const SizedBox(height: 24),
 
                   // Direction Button
                   Container(
                     width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: ElevatedButton.icon(
                       onPressed: _navigateToMap,
                       icon: const Icon(Icons.navigation,
-                          color: Colors.white, size: 20),
+                          color: Colors.white, size: 18),
                       label: const Text(
                         "Petunjuk Arah",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 14,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black87,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         elevation: 0,
                       ),

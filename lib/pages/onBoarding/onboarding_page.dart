@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:j_tour/pages/homepage/homepage.dart';
 import 'package:j_tour/pages/login/login_page.dart';
 import 'package:j_tour/pages/register/register_page.dart';
 

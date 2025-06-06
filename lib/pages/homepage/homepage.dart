@@ -2,13 +2,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:j_tour/models/place_model.dart';
-import 'package:j_tour/pages/homepage/widgets/bottom_navbar.dart';
 import 'package:j_tour/pages/homepage/widgets/place_card.dart';
 import 'package:j_tour/pages/homepage/widgets/popular_place_card.dart';
 import 'package:j_tour/pages/homepage/widgets/weather_header.dart';
+import 'package:j_tour/pages/search/search_page.dart'; // Import SearchPage
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final Function(String)? onNavigateToSearch; // Add callback parameter
+  
+  const HomePage({super.key, this.onNavigateToSearch});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -36,6 +38,21 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _currentIndex = index;
     });
+  }
+
+  // Navigate to SearchPage with specific category
+  void _navigateToSearchPage(String category) {
+    if (widget.onNavigateToSearch != null) {
+      widget.onNavigateToSearch!(category);
+    } else {
+      // Fallback to normal navigation if callback not provided
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SearchPage(initialCategory: category),
+        ),
+      );
+    }
   }
 
   @override
@@ -74,7 +91,6 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -93,7 +109,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => _navigateToSearchPage("Populer"), // Navigate to Popular category
                   child: const Text("Lihat Semua"),
                 ),
               ],
@@ -120,7 +136,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => _navigateToSearchPage("Rekomendasi"), // Navigate to Recommendation category
                   child: const Text("Lihat Semua"),
                 ),
               ],

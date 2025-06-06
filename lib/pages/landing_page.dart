@@ -12,14 +12,19 @@ class _LandingPageState extends State<LandingPage> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
+    _navigateToOnboarding();
+  }
+
+  _navigateToOnboarding() async {
+    await Future.delayed(const Duration(seconds: 3));
+    if (mounted) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => const OnboardingPage(),
         ),
       );
-    });
+    }
   }
 
   @override

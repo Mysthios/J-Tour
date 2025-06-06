@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:j_tour/pages/homepage/widgets/bottom_navbar.dart';
+import 'package:j_tour/pages/account/edit_profile.dart';
+import 'package:j_tour/pages/account/about_jtour.dart';
+import 'package:j_tour/pages/account/privacy_policy.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -38,6 +40,7 @@ class _AccountPageState extends State<AccountPage> {
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 24),
             child: Stack(
+              clipBehavior: Clip.none,
               children: [
                 // 🔳 Background hitam dengan konten profil
                 Container(
@@ -48,14 +51,23 @@ class _AccountPageState extends State<AccountPage> {
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Column(
-                    children: const [
-                      Icon(
-                        Icons.person,
-                        color: Colors.white,
-                        size: 48,
+                    children: [
+                      // Avatar dengan background putih
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.black,
+                          size: 32,
+                        ),
                       ),
-                      SizedBox(height: 16),
-                      Text(
+                      const SizedBox(height: 16),
+                      const Text(
                         'Fairuz Zaki',
                         style: TextStyle(
                           fontSize: 16,
@@ -63,8 +75,8 @@ class _AccountPageState extends State<AccountPage> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
+                      const SizedBox(height: 4),
+                      const Text(
                         'fairuzzaki972@gmail.com',
                         style: TextStyle(
                           fontSize: 13,
@@ -105,46 +117,153 @@ class _AccountPageState extends State<AccountPage> {
               ],
             ),
           ),
+
           const SizedBox(height: 24),
 
-          // Menu Items
+          // Section Label
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: const [
-                ListTile(
-                  leading: Icon(Icons.person),
-                  title: Text('Edit Profil'),
-                  trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                ),
-              ],
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            alignment: Alignment.centerLeft,
+            child: const Text(
+              'Akun',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
+          // Menu Items - Edit Profil
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.symmetric(horizontal: 24),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ListTile(
+              leading: const Icon(
+                Icons.person_outline,
+                color: Colors.black,
+              ),
+              title: const Text(
+                'Edit Profil',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Colors.grey,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Section Label
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            alignment: Alignment.centerLeft,
+            child: const Text(
+              'Lainnya',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Menu Items - Lainnya
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
-              children: const [
+              children: [
                 ListTile(
-                  leading: Icon(Icons.location_on),
-                  title: Text('Tentang J-Tour'),
-                  trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                  leading: const Icon(
+                    Icons.info_outline,
+                    color: Colors.black,
+                  ),
+                  title: const Text(
+                    'Tentang J-Tour',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Colors.grey,
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AboutJTourPage()),
+                    );
+                  },
                 ),
-                Divider(height: 0, indent: 16, endIndent: 16),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  height: 1,
+                  color: Colors.grey.withOpacity(0.2),
+                ),
                 ListTile(
-                  leading: Icon(Icons.privacy_tip),
-                  title: Text('Kebijakan Privasi'),
-                  trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                  leading: const Icon(
+                    Icons.privacy_tip_outlined,
+                    color: Colors.black,
+                  ),
+                  title: const Text(
+                    'Kebijakan Privasi',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Colors.grey,
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
+                    );
+                  },
                 ),
               ],
             ),
@@ -156,13 +275,39 @@ class _AccountPageState extends State<AccountPage> {
           Padding(
             padding: const EdgeInsets.only(bottom: 24),
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                // TODO: Implement logout functionality
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text('Logout'),
+                      content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+                      actions: [
+                        TextButton(
+                          child: const Text('Batal'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        TextButton(
+                          child: const Text('Logout'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            // Implement actual logout logic here
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF4D4D),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
               child: const Text(

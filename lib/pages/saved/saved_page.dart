@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:j_tour/pages/place/place_detail.dart';
 import 'package:j_tour/providers/saved_provider.dart';
 import 'package:j_tour/models/place_model.dart';
@@ -75,6 +76,8 @@ class SavedPage extends ConsumerWidget {
                       padding: const EdgeInsets.only(bottom: 100),
                       itemBuilder: (context, index) {
                         final place = savedPlaces[index];
+                        final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+                        
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 24),
                           child: DestinationCard(
@@ -83,7 +86,7 @@ class SavedPage extends ConsumerWidget {
                             name: place.name,
                             location: place.location,
                             rating: place.rating,
-                            priceRange: "Rp${place.price}",
+                            priceRange: formatter.format(place.price),
                             onTap: () {
                               // Navigate to detail page
                               Navigator.push(
@@ -133,28 +136,33 @@ class DestinationCard extends StatelessWidget {
     this.onBookmarkTap,
   });
 
-    @override
-    Widget build(BuildContext context) {
-      final screenWidth = MediaQuery.of(context).size.width;
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
 
-      return GestureDetector(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Stack(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Container untuk gambar dengan bookmark terpisah
+            SizedBox(
+              height: 140,
+              width: double.infinity,
+              child: Stack(
                 children: [
+                  // Gambar utama
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                     child: Image.asset(
@@ -164,16 +172,25 @@ class DestinationCard extends StatelessWidget {
                       fit: BoxFit.cover,
                     ),
                   ),
+                  // Bookmark button dengan posisi yang diperbaiki
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: 12,
+                    right: 12,
                     child: GestureDetector(
                       onTap: onBookmarkTap,
                       child: Container(
-                        padding: const EdgeInsets.all(6),
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: const Icon(
                           Icons.bookmark,
@@ -182,76 +199,88 @@ class DestinationCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Nama dan Harga
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            name,
+            ),
+            // Informasi tempat
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Nama dan Harga
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            priceRange,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
+                              color: kPrimaryBlue,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        Text(
-                          "$priceRange /Orang",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: kPrimaryBlue,
+                          const Text(
+                            '/Orang',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
                           ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Lokasi
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          location,
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    // Lokasi
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            location,
-                            style: const TextStyle(color: Colors.grey, fontSize: 12),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Rating
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 14, color: Colors.orange),
+                      const SizedBox(width: 4),
+                      Text(
+                        "$rating",
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    // Rating
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 14, color: Colors.orange),
-                        const SizedBox(width: 4),
-                        Text(
-                          "$rating",
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
-    }
-
+      ),
+    );
+  }
 }
