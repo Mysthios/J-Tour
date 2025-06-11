@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.7.2
+  sdk: '>=3.3.0 <4.0.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -33,14 +33,34 @@ dependencies:
   http: ^1.3.0
   flutter_riverpod: ^2.6.1
   weather: ^3.2.1
+  intl: ^0.19.0
+  geolocator: ^14.0.1
+  geocoding: ^3.0.0
+  url_launcher: ^6.3.1
+  share_plus: ^11.0.0
+  iconsax: ^0.0.8
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  shared_preferences: ^2.5.3
+  path: ^1.9.1
+  image_picker: ^1.1.2
+  file_picker: ^10.1.9
+  path_provider: ^2.1.5
+  carousel_slider: ^5.0.0
+  flutter_map: ^8.1.1
+  latlong2: ^0.9.1
+  flutter_native_splash: ^2.4.6
+  flutter_launcher_icons: ^0.14.3
+  rename: ^3.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -48,6 +68,15 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/Icon.png"
+  min_sdk_android: 21
+
+    # The flutter_launcher_icons package is used to generate app icons for
+    # Android and iOS.  It is configured in the pubspec.yaml file.
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
