@@ -11,10 +11,10 @@ class EditPlacePage extends ConsumerStatefulWidget {
   final bool isNew; // New parameter to indicate if this is a new place
 
   const EditPlacePage({
-    Key? key,
+    super.key,
     required this.place,
     this.isNew = false, // Default to false
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<EditPlacePage> createState() => _EditPlacePageState();
@@ -453,7 +453,7 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
               Row(
                 children: [
                   Text(
-                    '${_rating.toStringAsFixed(1)}',
+                    _rating.toStringAsFixed(1),
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold),
                   ),

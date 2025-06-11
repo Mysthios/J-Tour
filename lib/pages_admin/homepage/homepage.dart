@@ -22,17 +22,28 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const WeatherHeader(),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          toolbarHeight: 80, // Tinggikan AppBar
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.asset(
+                'assets/images/LabelAdmin.jpg',
+                height: 45,
+              ),
+              const SizedBox(height: 4),
+              const WeatherHeader(),
+            ],
           ),
-        ],
-      ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_none),
+              onPressed: () {},
+            ),
+          ],
+        ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
@@ -46,30 +57,32 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
                   "Wisata Anda",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.add_circle,
-                    color: Colors.blue,
-                  ),
-                  onPressed: () => _showAddPlaceDialog(context),
-                ),
+                // IconButton(
+                //   icon: const Icon(
+                //     Icons.add_circle,
+                //     color: Colors.blue,
+                //   ),
+                //   onPressed: () => _showAddPlaceDialog(context),
+                // ),
               ],
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              height: 200, // Increased height for better visibility
-              child: places.isEmpty
-                  ? const Center(
-                      child: Text('Tidak ada tempat wisata'),
-                    )
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: places.length,
-                      itemBuilder: (context, index) {
-                        return WisataAndaCard(place: places[index]);
-                      },
-                    ),
-            ),
+            places.isEmpty
+                ? const Center(
+                    child: Text('Tidak ada tempat wisata'),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: places.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: WisataAndaCard(place: places[index]),
+                      );
+                    },
+                  ),
+
           ],
         ),
       ),
@@ -168,7 +181,9 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
       weekendPrice: 25000,
       facilities: ['Area Parkir', 'Toilet'],
       reviewCount: 0,
-      additionalImages: [], // Empty list for additional images
+      additionalImages: [],
+      latitude: null, // atau bisa isi default seperti -8.1725
+      longitude: null, // atau bisa isi default seperti 113.7016 // Empty list for additional images
     );
 
     // Navigate to the edit page with the new place

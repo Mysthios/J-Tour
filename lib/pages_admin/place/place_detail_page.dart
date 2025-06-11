@@ -10,9 +10,9 @@ class PlaceDetailPage extends ConsumerStatefulWidget {
   final Place place;
 
   const PlaceDetailPage({
-    Key? key,
+    super.key,
     required this.place,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<PlaceDetailPage> createState() => _PlaceDetailPageState();
