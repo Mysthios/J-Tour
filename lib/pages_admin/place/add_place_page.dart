@@ -7,27 +7,22 @@ import 'package:j_tour/models/place_model.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class EditPlacePage extends ConsumerStatefulWidget {
-  final Place place;
-  final bool isNew;
+class CreatePlacePage extends ConsumerStatefulWidget {
+  const CreatePlacePage({Key? key}) : super(key: key);
+  
 
-  const EditPlacePage({
-    super.key,
-    required this.place,
-    this.isNew = false,
-  });
 
   @override
-  ConsumerState<EditPlacePage> createState() => _EditPlacePageState();
+  ConsumerState<CreatePlacePage> createState() => _CreatePlacePageState();
 }
 
-class _EditPlacePageState extends ConsumerState<EditPlacePage> {
+class _CreatePlacePageState extends ConsumerState<CreatePlacePage> {
   late TextEditingController _nameController;
   late TextEditingController _locationController;
+  late TextEditingController _categoryController;
   late TextEditingController _descriptionController;
   late TextEditingController _weekdaysHoursController;
   late TextEditingController _weekendHoursController;
@@ -37,9 +32,8 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
   File? _selectedImage;
   List<String> _facilities = [];
   List<String> _additionalImages = [];
-  late bool _isNewPlace;
   final _formKey = GlobalKey<FormState>();
-  
+
   // Map related variables
   LatLng? _selectedLocation;
   final MapController _mapController = MapController();
@@ -85,23 +79,21 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
   bool _showDropdown = false;
 
   String? _selectedCategory;
-  
+
   @override
   void initState() {
     super.initState();
-    _isNewPlace = widget.isNew;
     _initializeControllers();
     _initializeLocation();
     _filteredDistricts = _jemberDistricts;
   }
 
   void _initializeControllers() {
-    _nameController = TextEditingController(text: widget.place.name);
-    _locationController = TextEditingController(text: widget.place.location);
-    _selectedCategory = widget.place.category; // Assuming `category` is a property of Place
-    _descriptionController = TextEditingController(text: widget.place.description ?? '');
-    _weekdaysHoursController = TextEditingController(text: widget.place.weekdaysHours ?? '06:00 - 17:00');
-    _weekendHoursController = TextEditingController(text: widget.place.weekendHours ?? '06:00 - 18:00');
+    _nameController = TextEditingController();
+    _locationController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _weekdaysHoursController = TextEditingController(text: '06:00 - 17:00');
+    _weekendHoursController = TextEditingController(text: '06:00 - 18:00');
     _searchController = TextEditingController();
 
     // Format currency
@@ -112,26 +104,20 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     );
 
     _priceController = TextEditingController(
-      text: currencyFormatter.format(widget.place.price),
+      text: currencyFormatter.format(0),
     );
 
     _weekendPriceController = TextEditingController(
-      text: widget.place.weekendPrice != null
-          ? currencyFormatter.format(widget.place.weekendPrice!)
-          : currencyFormatter.format(widget.place.price + 15000),
+      text: currencyFormatter.format(15000), // Default weekend price
     );
 
-    _facilities = widget.place.facilities?.toList() ?? ['Area Parkir', 'Toilet'];
-    _additionalImages = widget.place.additionalImages?.toList() ?? [];
+    _facilities = [];
+    _additionalImages = [];
   }
 
   void _initializeLocation() {
-    if (widget.place.latitude != null && widget.place.longitude != null) {
-      _selectedLocation = LatLng(widget.place.latitude!, widget.place.longitude!);
-    } else {
-      // Default location (Jember, East Java)
-      _selectedLocation = LatLng(-8.1737, 113.6995);
-    }
+    // Default location (Jember, East Java)
+    _selectedLocation = LatLng(-8.1737, 113.6995);
   }
 
   void _filterDistricts(String query) {
@@ -223,7 +209,7 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     _mapController.move(_selectedLocation!, 15);
   }
 
-  // Fungsi untuk menampilkan dialog pilihan kamera atau gallery untuk gambar utama
+  // Function to show main image picker options
   void _showMainImagePickerOptions() {
     showModalBottomSheet(
       context: context,
@@ -276,7 +262,7 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     );
   }
 
-  // Fungsi untuk menampilkan dialog pilihan kamera atau gallery untuk gambar tambahan
+  // Function to show additional image picker options
   void _showAdditionalImagePickerOptions() {
     showModalBottomSheet(
       context: context,
@@ -329,7 +315,7 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     );
   }
 
-  // Widget untuk option picker
+  // Widget for image picker option
   Widget _imagePickerOption({
     required IconData icon,
     required String label,
@@ -361,7 +347,7 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     );
   }
 
-  // Fungsi untuk mengambil gambar utama
+  // Function to pick main image
   Future<void> _pickMainImage(ImageSource source) async {
     try {
       final ImagePicker picker = ImagePicker();
@@ -377,10 +363,10 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
           _selectedImage = File(pickedFile.path);
         });
 
-        // Tutup bottom sheet
+        // Close bottom sheet
         Navigator.of(context).pop();
 
-        // Tampilkan snackbar sukses
+        // Show success snackbar
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Foto utama berhasil diubah'),
@@ -399,7 +385,7 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     }
   }
 
-  // Fungsi untuk mengambil gambar tambahan
+  // Function to pick additional image
   Future<void> _pickAdditionalImage(ImageSource source) async {
     try {
       final ImagePicker picker = ImagePicker();
@@ -415,10 +401,10 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
           _additionalImages.add(pickedFile.path);
         });
 
-        // Tutup bottom sheet
+        // Close bottom sheet
         Navigator.of(context).pop();
 
-        // Tampilkan snackbar sukses
+        // Show success snackbar
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Foto tambahan berhasil ditambahkan'),
@@ -683,34 +669,34 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     }
 
     // Parse currency formatted strings back to integers
-    String priceText = _priceController.text.replaceAll(RegExp(r'[^\d]'), '');
+    String priceText =
+        _priceController.text.replaceAll(RegExp(r'[^\d]'), '');
     int price = int.tryParse(priceText) ?? 0;
     int weekendPrice = int.tryParse(
         _weekendPriceController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
 
-    final updatedPlace = widget.place.copyWith(
+    final newPlace = Place(
       name: _nameController.text,
       location: _locationController.text,
-      category: _selectedCategory,
       description: _descriptionController.text,
       weekdaysHours: _weekdaysHoursController.text,
       weekendHours: _weekendHoursController.text,
       price: price,
       weekendPrice: weekendPrice,
+      category: _selectedCategory,
       facilities: _facilities,
-      image: _selectedImage?.path ?? widget.place.image,
-      isLocalImage: _selectedImage != null ? true : widget.place.isLocalImage,
+      image: _selectedImage?.path ?? '',
+      isLocalImage: _selectedImage != null,
       additionalImages: _additionalImages,
       latitude: _selectedLocation?.latitude,
-      longitude: _selectedLocation?.longitude,
+      longitude: _selectedLocation?.longitude, 
+      rating: null,
     );
 
-    if (_isNewPlace) {
-      ref.read(placesNotifierProvider.notifier).addPlace(updatedPlace);
-    } else {
-      ref.read(placesNotifierProvider.notifier).updatePlace(updatedPlace);
-    }
+    // Add the new place to the provider
+    ref.read(placesNotifierProvider.notifier).addPlace(newPlace);
 
+    // Navigate back to the previous screen
     Navigator.pop(context, true);
   }
 
@@ -733,9 +719,9 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _isNewPlace ? 'Tambah Wisata Baru' : 'Edit Wisata',
-          style: const TextStyle(color: Colors.black),
+        title: const Text(
+          'Tambah Wisata Baru',
+          style: TextStyle(color: Colors.black),
         ),
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -770,15 +756,13 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
                               borderRadius: BorderRadius.circular(12),
                               child: Image.file(_selectedImage!, fit: BoxFit.cover),
                             )
-                          : widget.place.isLocalImage
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.file(File(widget.place.image), fit: BoxFit.cover),
-                                )
-                              : ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(widget.place.image, fit: BoxFit.cover),
-                                ),
+                          : Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.grey[300],
+                              ),
+                              child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                            ),
                     ),
                     Positioned(
                       bottom: 0,
@@ -841,9 +825,7 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: _additionalImages[index].startsWith('/')
-                                ? Image.file(File(_additionalImages[index]), fit: BoxFit.cover)
-                                : Image.asset(_additionalImages[index], fit: BoxFit.cover),
+                            child: Image.file(File(_additionalImages[index]), fit: BoxFit.cover),
                           ),
                         ),
                         Positioned(
@@ -949,46 +931,48 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
                         },
                       ),
                     ),
-                ],
-              ),
-              
-              const Text(
-                'Kategori Wisata',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                ),
-                hint: const Text('Pilih Kategori'),
-                items: [
-                  DropdownMenuItem(
-                    value: 'Pantai',
-                    child: Text('Pantai'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Air Terjun',
-                    child: Text('Air Terjun'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Pegunungan',
-                    child: Text('Pegunungan'),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Kategori wisata tidak boleh kosong';
-                  }
-                  return null;
-                },
-              ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Kategori Wisata
+                    const Text(
+                      'Kategori Wisata',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedCategory,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      hint: const Text('Pilih Kategori'),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'Pantai',
+                          child: Text('Pantai'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Air Terjun',
+                          child: Text('Air Terjun'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Pegunungan',
+                          child: Text('Pegunungan'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCategory = value;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Kategori wisata tidak boleh kosong';
+                        }
+                        return null;
+                      },
+                    ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _descriptionController,
@@ -1173,9 +1157,9 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
-                    _isNewPlace ? 'Tambah Wisata' : 'Simpan Perubahan',
-                    style: const TextStyle(
+                  child: const Text(
+                    'Tambah Wisata',
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:j_tour/pages/landing_page.dart';
+import 'package:j_tour/main_page.dart';
 import 'package:j_tour/pages/onBoarding/onboarding_page.dart'; // Import LandingPage
 
 void main() async {
