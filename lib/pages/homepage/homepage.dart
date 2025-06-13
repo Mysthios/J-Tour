@@ -2,13 +2,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:j_tour/models/place_model.dart';
-import 'package:j_tour/pages/homepage/widgets/bottom_navbar.dart';
 import 'package:j_tour/pages/homepage/widgets/place_card.dart';
 import 'package:j_tour/pages/homepage/widgets/popular_place_card.dart';
 import 'package:j_tour/pages/homepage/widgets/weather_header.dart';
+import 'package:j_tour/pages/search/search_page.dart'; // Import SearchPage
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final Function(String)? onNavigateToSearch; // Add callback parameter
+  
+  const HomePage({super.key, this.onNavigateToSearch});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -16,7 +18,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Place> places = [];
-  int _currentIndex = 0; // ✅ Tambahkan ini
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -32,56 +34,113 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // ✅ Fungsi ini untuk handle tap pada BottomNavBar
   void _onNavBarTap(int index) {
     setState(() {
       _currentIndex = index;
     });
-    // Tambahkan navigasi sesuai kebutuhan
+  }
+
+  // Navigate to SearchPage with specific category
+  void _navigateToSearchPage(String category) {
+    if (widget.onNavigateToSearch != null) {
+      widget.onNavigateToSearch!(category);
+    } else {
+      // Fallback to normal navigation if callback not provided
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SearchPage(initialCategory: category),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    final horizontalPadding = screenWidth * 0.04;
+    final titleFontSize = screenWidth * 0.045;
+    final logoHeight = screenHeight * 0.06;
+    final weatherHeight = screenHeight * 0.055;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const WeatherHeader(),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
+        toolbarHeight: screenHeight * 0.11,
+        automaticallyImplyLeading: false,
+        title: Padding(
+          padding: EdgeInsets.only(left: horizontalPadding * 0.5, right: horizontalPadding),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Transform.translate(
+                offset: const Offset(-5, 0),  // geser ke kiri 5 pixel
+                child: Image.asset(
+                  'assets/images/Label.jpg',
+                  height: logoHeight,
+                ),
+              ),
+              SizedBox(
+                height: weatherHeight,
+                child: const WeatherHeader(),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 16),
-            const Text(
-              "Popular Place",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            SizedBox(height: screenHeight * 0.02),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Wisata Populer",
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _navigateToSearchPage("Populer"), // Navigate to Popular category
+                  child: const Text("Lihat Semua"),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
             SizedBox(
-              height: 180,
+              height: screenHeight * 0.26,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: places.length,
+                itemCount: places.length > 2 ? 2 : places.length,
                 itemBuilder: (context, index) {
                   return PopularPlaceCard(place: places[index]);
                 },
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              "Recommendation",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            SizedBox(height: screenHeight * 0.03),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Rekomendasi Untuk Anda",
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _navigateToSearchPage("Rekomendasi"), // Navigate to Recommendation category
+                  child: const Text("Lihat Semua"),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
             ListView.builder(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
@@ -90,13 +149,10 @@ class _HomePageState extends State<HomePage> {
                 return PlaceCard(place: places[index]);
               },
             ),
+            SizedBox(height: screenHeight * 0.04),
           ],
         ),
       ),
-      // bottomNavigationBar: CustomBottomNavBar(
-      //   currentIndex: _currentIndex, // ✅ gunakan variabel ini
-      //   onTap: _onNavBarTap, // ✅ dan fungsi ini
-      // ),
     );
   }
 }
