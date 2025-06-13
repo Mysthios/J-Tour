@@ -112,7 +112,9 @@ class _NavigationPageState extends State<NavigationPage>
 
   void _updateNavigationInstructions(LatLng currentPos) {
     if (widget.routeSteps.isEmpty ||
-        currentStepIndex >= widget.routeSteps.length) return;
+        currentStepIndex >= widget.routeSteps.length) {
+      return;
+    }
 
     // Calculate distance to next step
     final nextStepLocation =
@@ -326,14 +328,18 @@ class _NavigationPageState extends State<NavigationPage>
   }
 
   IconData _getInstructionIcon(String instruction) {
-    if (instruction.contains('Belok kiri') || instruction.contains('kiri'))
+    if (instruction.contains('Belok kiri') || instruction.contains('kiri')) {
       return Icons.turn_left;
-    if (instruction.contains('Belok kanan') || instruction.contains('kanan'))
+    }
+    if (instruction.contains('Belok kanan') || instruction.contains('kanan')) {
       return Icons.turn_right;
-    if (instruction.contains('Lurus') || instruction.contains('Lanjutkan'))
+    }
+    if (instruction.contains('Lurus') || instruction.contains('Lanjutkan')) {
       return Icons.straight;
-    if (instruction.contains('Sampai') || instruction.contains('tujuan'))
+    }
+    if (instruction.contains('Sampai') || instruction.contains('tujuan')) {
       return Icons.flag;
+    }
     if (instruction.contains('Mulai')) return Icons.play_arrow;
     if (instruction.contains('tol')) return Icons.merge_type;
     if (instruction.contains('Bergabung')) return Icons.merge;

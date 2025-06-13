@@ -104,7 +104,7 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
                     },
                   ),
                   items: _images.map((img) {
-                    return Container(
+                    return SizedBox(
                       width: double.infinity,
                       child: Image.asset(
                         img,
@@ -391,31 +391,31 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Contact Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _openWhatsApp,
-                            icon: const Icon(Icons.phone,
-                                color: Colors.white, size: 16),
-                            label: const Text(
-                              "Hubungi",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 0,
-                            ),
-                          ),
-                        ),
+                        // // Contact Button
+                        // SizedBox(
+                        //   width: double.infinity,
+                        //   child: ElevatedButton.icon(
+                        //     onPressed: _openWhatsApp,
+                        //     icon: const Icon(Icons.phone,
+                        //         color: Colors.white, size: 16),
+                        //     label: const Text(
+                        //       "Hubungi",
+                        //       style: TextStyle(
+                        //         color: Colors.white,
+                        //         fontWeight: FontWeight.w600,
+                        //         fontSize: 14,
+                        //       ),
+                        //     ),
+                        //     style: ElevatedButton.styleFrom(
+                        //       backgroundColor: Colors.blue,
+                        //       padding: const EdgeInsets.symmetric(vertical: 12),
+                        //       shape: RoundedRectangleBorder(
+                        //         borderRadius: BorderRadius.circular(8),
+                        //       ),
+                        //       elevation: 0,
+                        //     ),
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),

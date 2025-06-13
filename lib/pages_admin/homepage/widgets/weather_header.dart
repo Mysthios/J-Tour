@@ -12,6 +12,7 @@ class _WeatherHeaderState extends State<WeatherHeader> {
   double? temperature;
   String? condition;
   String? iconCode;
+  int? cloudiness;
 
   final Map<String, String> weatherTranslation = {
     'Clear': 'Cerah',
@@ -44,6 +45,7 @@ class _WeatherHeaderState extends State<WeatherHeader> {
         temperature = weatherData['temp'];
         condition = weatherData['condition'];
         iconCode = weatherData['iconCode'];
+        cloudiness = weatherData['clouds'];
       });
     } catch (e) {
       debugPrint('Error loading weather: $e');
@@ -58,8 +60,16 @@ class _WeatherHeaderState extends State<WeatherHeader> {
     return 'Selamat Malam';
   }
 
-  String getIndonesianCondition(String? condition) {
+  String getSmartCondition(String? condition, int? cloudiness) {
     if (condition == null) return '-';
+
+    // Smart logic: override if cloudiness is low
+    if (condition == 'Clouds' && (cloudiness ?? 100) < 30) {
+      return 'Berawan';
+    } else if (condition == 'Clear' && (cloudiness ?? 0) > 50) {
+      return 'Cerah';
+    }
+
     return weatherTranslation[condition] ?? condition;
   }
 
@@ -70,22 +80,22 @@ class _WeatherHeaderState extends State<WeatherHeader> {
         iconCode != null
             ? Image.network(
                 'https://openweathermap.org/img/wn/$iconCode@2x.png',
-                width: 48,
-                height: 48,
+                width: 55,
+                height: 55,
               )
-            : const SizedBox(width: 48, height: 48),
+            : const SizedBox(width: 55, height: 55),
         const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               temperature != null
-                  ? '${getGreeting()} • ${temperature!.round()}°C'
+                  ? '${temperature!.round()}°C  ${getSmartCondition(condition, cloudiness)}'
                   : 'Memuat...',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              getIndonesianCondition(condition),
+              getGreeting(),
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
           ],

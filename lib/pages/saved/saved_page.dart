@@ -85,7 +85,7 @@ class SavedPage extends ConsumerWidget {
                             imagePath: place.image,
                             name: place.name,
                             location: place.location,
-                            rating: place.rating,
+                            rating: place.rating ?? 0.0,
                             priceRange: formatter.format(place.price),
                             onTap: () {
                               // Navigate to detail page

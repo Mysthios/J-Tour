@@ -2,7 +2,7 @@ class Place {
   final String id;
   final String name;
   final String location;
-  final double rating;
+  final double? rating;
   final int price;
   final String image;
   final bool isLocalImage;
@@ -21,7 +21,7 @@ class Place {
     String? id,
     required this.name,
     required this.location,
-    required this.rating,
+    this.rating,
     required this.price,
     required this.image,
     this.isLocalImage = false,
@@ -132,4 +132,6 @@ class Place {
 
   @override
   int get hashCode => id.hashCode;
+
+  get phoneNumber => null;
 }

@@ -23,18 +23,32 @@ class _SearchPageState extends State<SearchPage> {
     "Rekomendasi",
     "Pantai",
     "Air Terjun",
-    "Kawah"
+    "Pegunungan"
   ];
+  
+  // Search and filter variables
   String? selectedCategory; // Initially no category is selected
   String searchQuery = "";
+  String sortBy = "name"; // name, rating, price
+  bool isAscending = true;
+  
   List<Place> allPlaces = [];
   bool isLoading = true;
+
+  final List<String> sortOptions = [
+    "Nama (A-Z)",
+    "Nama (Z-A)",
+    "Rating Tertinggi",
+    "Rating Terendah",
+    "Harga Termurah",
+    "Harga Termahal"
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Set initial category if provided
-    selectedCategory = widget.initialCategory;
+    // Set initial category if provided, but don't auto-select on first load
+    // selectedCategory = widget.initialCategory;
     loadPlacesData();
   }
 
@@ -61,7 +75,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   List<Place> get filteredPlaces {
-    List<Place> filtered = allPlaces;
+    List<Place> filtered = List.from(allPlaces);
 
     // Filter by search query
     if (searchQuery.isNotEmpty) {
@@ -85,23 +99,212 @@ class _SearchPageState extends State<SearchPage> {
               .where((place) => place.category?.toLowerCase() == "air terjun")
               .toList();
           break;
-        case "Kawah":
+        case "Pegunungan":
           filtered = filtered
-              .where((place) => place.category?.toLowerCase() == "kawah")
+              .where((place) => place.category?.toLowerCase() == "pegunungan")
               .toList();
           break;
         case "Populer":
           // Show popular places (rating >= 4.5)
-          filtered = filtered.where((place) => place.rating >= 4.5).toList();
+          filtered = filtered.where((place) => place.rating != null && place.rating! >= 4.5).toList();
           break;
         case "Rekomendasi":
           // Show recommended places (rating >= 4.0)
-          filtered = filtered.where((place) => place.rating >= 4.0).toList();
+          filtered = filtered.where((place) => place.rating != null && place.rating! >= 4.0).toList();
           break;
       }
     }
 
+    // Sort places
+    filtered.sort((a, b) {
+      int comparison = 0;
+      switch (sortBy) {
+        case "name":
+          comparison = a.name.compareTo(b.name);
+          break;
+        case "rating":
+          comparison = (a.rating ?? 0).compareTo(b.rating ?? 0);
+          break;
+        case "price":
+          comparison = a.price.compareTo(b.price);
+          break;
+      }
+      return isAscending ? comparison : -comparison;
+    });
+
     return filtered;
+  }
+
+  void _showFilterDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Fixed Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Filter & Sort',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          selectedCategory = null;
+                          searchQuery = "";
+                          sortBy = "name";
+                          isAscending = true;
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Reset'),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Scrollable Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Kategori',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: categories.map((category) {
+                          final isSelected = selectedCategory == category;
+                          return GestureDetector(
+                            onTap: () {
+                              setModalState(() {
+                                selectedCategory = isSelected ? null : category;
+                              });
+                              setState(() {
+                                selectedCategory = isSelected ? null : category;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected ? kPrimaryBlue : Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: kPrimaryBlue),
+                              ),
+                              child: Text(
+                                category,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : kPrimaryBlue,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Urutkan berdasarkan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...sortOptions.map((option) {
+                        String currentSort = "";
+                        bool currentAscending = true;
+                        
+                        switch (option) {
+                          case "Nama (A-Z)":
+                            currentSort = "name";
+                            currentAscending = true;
+                            break;
+                          case "Nama (Z-A)":
+                            currentSort = "name";
+                            currentAscending = false;
+                            break;
+                          case "Rating Tertinggi":
+                            currentSort = "rating";
+                            currentAscending = false;
+                            break;
+                          case "Rating Terendah":
+                            currentSort = "rating";
+                            currentAscending = true;
+                            break;
+                          case "Harga Termurah":
+                            currentSort = "price";
+                            currentAscending = true;
+                            break;
+                          case "Harga Termahal":
+                            currentSort = "price";
+                            currentAscending = false;
+                            break;
+                        }
+                        
+                        final isSelected = sortBy == currentSort && isAscending == currentAscending;
+                        
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          child: RadioListTile<String>(
+                            value: option,
+                            groupValue: isSelected ? option : "",
+                            onChanged: (value) {
+                              setState(() {
+                                sortBy = currentSort;
+                                isAscending = currentAscending;
+                              });
+                              Navigator.pop(context);
+                            },
+                            title: Text(
+                              option,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            activeColor: kPrimaryBlue,
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        );
+                      }).toList(),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -163,14 +366,17 @@ class _SearchPageState extends State<SearchPage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Container(
-                  height: 45,
-                  width: 45,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(12),
+                GestureDetector(
+                  onTap: _showFilterDialog,
+                  child: Container(
+                    height: 45,
+                    width: 45,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.tune, color: Colors.white, size: 20),
                   ),
-                  child: const Icon(Icons.tune, color: Colors.white, size: 20),
                 ),
               ],
             ),
@@ -214,6 +420,61 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 16),
 
+            // Active Filters Chips
+            if (selectedCategory != null || searchQuery.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (selectedCategory != null)
+                      Chip(
+                        label: Text(selectedCategory!),
+                        deleteIcon: const Icon(Icons.close, size: 16),
+                        onDeleted: () => setState(() => selectedCategory = null),
+                        backgroundColor: kPrimaryBlue.withOpacity(0.1),
+                        labelStyle: const TextStyle(color: kPrimaryBlue),
+                      ),
+                    if (searchQuery.isNotEmpty)
+                      Chip(
+                        label: Text('"$searchQuery"'),
+                        deleteIcon: const Icon(Icons.close, size: 16),
+                        onDeleted: () => setState(() => searchQuery = ""),
+                        backgroundColor: Colors.orange.withOpacity(0.1),
+                        labelStyle: const TextStyle(color: Colors.orange),
+                      ),
+                  ],
+                ),
+              ),
+
+            // Header dengan jumlah
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Destinasi Wisata",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      "${filteredPlaces.length} destinasi ditemukan",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
             // 🧾 List destinasi
             Expanded(
               child: isLoading
@@ -223,23 +484,40 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                     )
                   : filteredPlaces.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.search_off,
+                                searchQuery.isNotEmpty || selectedCategory != null
+                                    ? Icons.search_off
+                                    : Icons.location_off,
                                 size: 64,
                                 color: Colors.grey,
                               ),
-                              SizedBox(height: 16),
+                              const SizedBox(height: 16),
                               Text(
-                                'Tidak ada destinasi ditemukan',
-                                style: TextStyle(
+                                searchQuery.isNotEmpty || selectedCategory != null
+                                    ? 'Tidak ada destinasi ditemukan'
+                                    : 'Belum ada destinasi wisata',
+                                style: const TextStyle(
                                   fontSize: 16,
                                   color: Colors.grey,
                                 ),
                               ),
+                              if (searchQuery.isNotEmpty || selectedCategory != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        searchQuery = "";
+                                        selectedCategory = null;
+                                      });
+                                    },
+                                    child: const Text('Reset Filter'),
+                                  ),
+                                ),
                             ],
                           ),
                         )
