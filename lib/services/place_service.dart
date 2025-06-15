@@ -1,121 +1,236 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path/path.dart' as path;
-import '../models/place_model.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:j_tour/models/place_model.dart';
 
-class PlaceService {
-  static const String _placesKey = 'places_data';
+class ApiService {
+  static const String baseUrl = 'http://localhost:3000/api'; // Ganti dengan URL server Anda
+  
+  // Headers default
+  static Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 
-  // Load initial data from assets when first run
-  Future<List<Place>> _loadInitialData() async {
+  // GET all places
+  static Future<List<Place>> getAllPlaces() async {
     try {
-      final data = await rootBundle.loadString('assets/places.json');
-      final List list = json.decode(data);
-      return list.map((e) => Place.fromJson(e)).toList();
+      final response = await http.get(
+        Uri.parse('$baseUrl/places'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body)['data'];
+        return data.map((json) => Place.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load places: ${response.statusCode}');
+      }
     } catch (e) {
-      print('Error loading initial data: $e');
-      return [];
+      throw Exception('Network error: $e');
     }
   }
 
-  // Get all places from shared preferences
-  Future<List<Place>> getPlaces() async {
-    final prefs = await SharedPreferences.getInstance();
-    final placesJson = prefs.getString(_placesKey);
-
-    if (placesJson == null) {
-      // First run, load from assets and save to shared preferences
-      final initialPlaces = await _loadInitialData();
-      await savePlaces(initialPlaces);
-      return initialPlaces;
-    }
-
+  // GET place by ID
+  static Future<Place> getPlaceById(String id) async {
     try {
-      final List<dynamic> decodedList = json.decode(placesJson);
-      return decodedList.map((item) => Place.fromJson(item)).toList();
+      final response = await http.get(
+        Uri.parse('$baseUrl/places/$id'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body)['data'];
+        return Place.fromJson(data);
+      } else {
+        throw Exception('Failed to load place: ${response.statusCode}');
+      }
     } catch (e) {
-      print('Error decoding places: $e');
-      return [];
+      throw Exception('Network error: $e');
     }
   }
 
-  // Save all places to shared preferences
-  Future<void> savePlaces(List<Place> places) async {
-    final prefs = await SharedPreferences.getInstance();
-    final placesJson =
-        json.encode(places.map((place) => place.toJson()).toList());
-    await prefs.setString(_placesKey, placesJson);
-  }
+  // GET places by category
+  static Future<List<Place>> getPlacesByCategory(String category) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/places/category/$category'),
+        headers: _headers,
+      );
 
-  // Add a new place
-  Future<List<Place>> addPlace(Place place) async {
-    final places = await getPlaces();
-    places.add(place);
-    await savePlaces(places);
-    return places;
-  }
-
-  // Update an existing place
-  Future<List<Place>> updatePlace(Place updatedPlace) async {
-    final places = await getPlaces();
-    final index = places.indexWhere((place) => place.id == updatedPlace.id);
-
-    if (index != -1) {
-      places[index] = updatedPlace;
-      await savePlaces(places);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body)['data'];
+        return data.map((json) => Place.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load places by category: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
     }
-
-    return places;
   }
 
-  // Delete a place
-  Future<List<Place>> deletePlace(String id) async {
-    final places = await getPlaces();
-    final index = places.indexWhere((place) => place.id == id);
+  // POST create new place
+  static Future<Place> createPlace({
+    required String name,
+    required String location,
+    required String description,
+    required String weekdaysHours,
+    required String weekendHours,
+    required int price,
+    required int weekendPrice,
+    required int weekdayPrice,
+    required String category,
+    required List<String> facilities,
+    required double latitude,
+    required double longitude,
+    File? mainImage,
+    List<File>? additionalImages,
+  }) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/places'),
+      );
 
-    if (index != -1) {
-      final deletedPlace = places.removeAt(index);
+      // Add text fields
+      request.fields.addAll({
+        'name': name,
+        'location': location,
+        'description': description,
+        'weekdaysHours': weekdaysHours,
+        'weekendHours': weekendHours,
+        'price': price.toString(),
+        'weekendPrice': weekendPrice.toString(),
+        'weekdayPrice': weekdayPrice.toString(),
+        'category': category,
+        'facilities': json.encode(facilities),
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+      });
 
-      // Delete the local image file if it was saved locally
-      if (deletedPlace.isLocalImage) {
-        try {
-          final file = File(deletedPlace.image);
-          if (await file.exists()) {
-            await file.delete();
-          }
-        } catch (e) {
-          print('Error deleting image file: $e');
+      // Add main image if exists
+      if (mainImage != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'images',
+            mainImage.path,
+          ),
+        );
+      }
+
+      // Add additional images if exist
+      if (additionalImages != null) {
+        for (File image in additionalImages) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'images',
+              image.path,
+            ),
+          );
         }
       }
 
-      await savePlaces(places);
-    }
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
-    return places;
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body)['data'];
+        return Place.fromJson(data);
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception('Failed to create place: ${errorData['message'] ?? response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
   }
 
-  // Save an image to local storage and return the file path
-  Future<String> saveImageLocally(File imageFile) async {
-    final directory = await getApplicationDocumentsDirectory();
+  // PUT update place
+  static Future<Place> updatePlace({
+    required String id,
+    required String name,
+    required String location,
+    required String description,
+    required String weekdaysHours,
+    required String weekendHours,
+    required int price,
+    required int weekendPrice,
+    required int weekdayPrice,
+    required String category,
+    required List<String> facilities,
+    required double latitude,
+    required double longitude,
+    List<File>? newImages,
+    List<String>? existingImages,
+  }) async {
+    try {
+      var request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('$baseUrl/places/$id'),
+      );
 
-    // Create more unique filename with UUID-like structure
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = timestamp % 10000; // Additional randomness
-    final fileExtension = path.extension(imageFile.path);
+      // Add text fields
+      request.fields.addAll({
+        'name': name,
+        'location': location,
+        'description': description,
+        'weekdaysHours': weekdaysHours,
+        'weekendHours': weekendHours,
+        'price': price.toString(),
+        'weekendPrice': weekendPrice.toString(),
+        'weekdayPrice': weekdayPrice.toString(),
+        'category': category,
+        'facilities': json.encode(facilities),
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+      });
 
-    // Format: jtour_image_timestamp_random.extension
-    final fileName = 'jtour_image_${timestamp}_$random$fileExtension';
+      // Add existing images if provided
+      if (existingImages != null) {
+        request.fields['existingImages'] = json.encode(existingImages);
+      }
 
-    // Create places directory if it doesn't exist
-    final placesDir = Directory('${directory.path}/places_images');
-    if (!await placesDir.exists()) {
-      await placesDir.create(recursive: true);
+      // Add new images if exist
+      if (newImages != null) {
+        for (File image in newImages) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'newImages',
+              image.path,
+            ),
+          );
+        }
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body)['data'];
+        return Place.fromJson(data);
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception('Failed to update place: ${errorData['message'] ?? response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
     }
+  }
 
-    final savedImage = await imageFile.copy('${placesDir.path}/$fileName');
-    return savedImage.path;
+  // DELETE place
+  static Future<void> deletePlace(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/places/$id'),
+        headers: _headers,
+      );
+
+      if (response.statusCode != 200) {
+        final errorData = json.decode(response.body);
+        throw Exception('Failed to delete place: ${errorData['message'] ?? response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
   }
 }

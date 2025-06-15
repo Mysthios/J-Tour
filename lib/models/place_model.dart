@@ -9,6 +9,7 @@ class Place {
   final String? description;
   final String? weekdaysHours;
   final String? weekendHours;
+  final int? weekdayPrice;
   final int? weekendPrice;
   final List<String>? facilities;
   final int? reviewCount;
@@ -28,6 +29,7 @@ class Place {
     this.description,
     this.weekdaysHours,
     this.weekendHours,
+    this.weekdayPrice,
     this.weekendPrice,
     this.facilities,
     this.reviewCount,
@@ -48,6 +50,7 @@ class Place {
     String? description,
     String? weekdaysHours,
     String? weekendHours,
+    int? weekdayPrice,
     int? weekendPrice,
     List<String>? facilities,
     int? reviewCount,
@@ -67,6 +70,7 @@ class Place {
       description: description ?? this.description,
       weekdaysHours: weekdaysHours ?? this.weekdaysHours,
       weekendHours: weekendHours ?? this.weekendHours,
+      weekdayPrice: weekdayPrice ?? this.weekdayPrice,
       weekendPrice: weekendPrice ?? this.weekendPrice,
       facilities: facilities ?? this.facilities,
       reviewCount: reviewCount ?? this.reviewCount,
@@ -83,16 +87,23 @@ class Place {
       name: json['name'],
       location: json['location'],
       rating: (json['rating'] as num).toDouble(),
-      price: (json['price'] is int) ? json['price'] : (json['price'] * 1000).toInt(),
+      price: (json['price'] is int)
+          ? json['price']
+          : (json['price'] * 1000).toInt(),
       image: json['image'],
       isLocalImage: json['isLocalImage'] ?? false,
       description: json['description'],
       weekdaysHours: json['weekdaysHours'],
       weekendHours: json['weekendHours'],
       weekendPrice: json['weekendPrice'],
-      facilities: json['facilities'] != null ? List<String>.from(json['facilities']) : null,
+      weekdayPrice: json['weekdayPrice'],
+      facilities: json['facilities'] != null
+          ? List<String>.from(json['facilities'])
+          : null,
       reviewCount: json['reviewCount'],
-      additionalImages: json['additionalImages'] != null ? List<String>.from(json['additionalImages']) : null,
+      additionalImages: json['additionalImages'] != null
+          ? List<String>.from(json['additionalImages'])
+          : null,
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
       category: json['category'],
@@ -112,6 +123,7 @@ class Place {
       'weekdaysHours': weekdaysHours,
       'weekendHours': weekendHours,
       'weekendPrice': weekendPrice,
+      'weekdayPrice': weekdayPrice,
       'facilities': facilities,
       'reviewCount': reviewCount,
       'additionalImages': additionalImages,
@@ -123,12 +135,13 @@ class Place {
 
   @override
   String toString() {
-    return 'Place(id: $id, name: $name, location: $location, rating: $rating, price: $price, image: $image, isLocalImage: $isLocalImage, description: $description, weekdaysHours: $weekdaysHours, weekendHours: $weekendHours, weekendPrice: $weekendPrice, facilities: $facilities, reviewCount: $reviewCount, additionalImages: $additionalImages, latitude: $latitude, longitude: $longitude, category: $category)';
+    return 'Place(id: $id, name: $name, location: $location, rating: $rating, price: $price, image: $image, isLocalImage: $isLocalImage, description: $description, weekdaysHours: $weekdaysHours, weekendHours: $weekendHours, weekendPrice: $weekendPrice, weekdayPrice: $weekdayPrice ,facilities: $facilities, reviewCount: $reviewCount, additionalImages: $additionalImages, latitude: $latitude, longitude: $longitude, category: $category)';
   }
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is Place && runtimeType == other.runtimeType && id == other.id;
+      identical(this, other) ||
+      other is Place && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;

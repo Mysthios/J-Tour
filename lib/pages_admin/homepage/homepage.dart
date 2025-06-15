@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:j_tour/models/place_model.dart';
-import 'package:j_tour/pages_admin/place/add_place_page.dart';
+import 'package:j_tour/pages_admin/place/add_place/add_place_page.dart';
+import 'package:j_tour/pages_admin/place/edit_place/edit_place_page.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:j_tour/pages_admin/homepage/widgets/wisata_anda_card.dart';
 import 'package:j_tour/pages_admin/homepage/widgets/weather_header.dart';
-import 'package:j_tour/pages_admin/place/edit_place_page.dart';
+
 
 class AdminHomePage extends ConsumerStatefulWidget {
   const AdminHomePage({super.key});
@@ -42,7 +43,8 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
   ];
 
   List<Place> get filteredAndSortedPlaces {
-    final places = ref.watch(placesNotifierProvider);
+    final placesState = ref.watch(placesNotifierProvider);
+    final List<Place> places = placesState.places; // Adjust this line based on your PlacesState structure
     List<Place> filtered = List.from(places);
 
     // Filter by search query
@@ -564,36 +566,36 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
     );
   }
 
-  void _showPlaceOptions(BuildContext context, Place place) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Edit Wisata'),
-              onTap: () {
-                Navigator.pop(context);
-                _showEditPlaceDialog(context, place);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Hapus Wisata',
-                  style: TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteConfirmation(context, place);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // void _showPlaceOptions(BuildContext context, Place place) {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     builder: (context) => Padding(
+  //       padding: const EdgeInsets.symmetric(vertical: 20.0),
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           ListTile(
+  //             leading: const Icon(Icons.edit),
+  //             title: const Text('Edit Wisata'),
+  //             onTap: () {
+  //               Navigator.pop(context);
+  //               _showEditPlaceDialog(context, place);
+  //             },
+  //           ),
+  //           ListTile(
+  //             leading: const Icon(Icons.delete, color: Colors.red),
+  //             title: const Text('Hapus Wisata',
+  //                 style: TextStyle(color: Colors.red)),
+  //             onTap: () {
+  //               Navigator.pop(context);
+  //               _showDeleteConfirmation(context, place);
+  //             },
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   void _showDeleteConfirmation(BuildContext context, Place place) {
     showDialog(
@@ -669,18 +671,18 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
     }
   }
 
-  Future<void> _showEditPlaceDialog(BuildContext context, Place place) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditPlacePage(place: place),
-      ),
-    );
+  // Future<void> _showEditPlaceDialog(BuildContext context, Place place) async {
+  //   final result = await Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => EditPlacePage(place: place),
+  //     ),
+  //   );
 
-    if (result == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tempat wisata berhasil diperbarui')),
-      );
-    }
-  }
+  //   if (result == true) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text('Tempat wisata berhasil diperbarui')),
+  //     );
+  //   }
+  // }
 }

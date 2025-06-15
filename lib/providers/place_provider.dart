@@ -1,134 +1,264 @@
+// lib/providers/place_provider.dart
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:j_tour/models/place_model.dart';
 import 'package:j_tour/services/place_service.dart';
-import '../models/place_model.dart';
 
-/// Provider untuk instance PlaceService
-final placeServiceProvider = Provider<PlaceService>((ref) {
-  return PlaceService();
-});
+// State for places list
+class PlacesState {
+  final List<Place> places;
+  final bool isLoading;
+  final String? error;
 
-/// StateNotifier untuk mengelola data Place
-class PlacesNotifier extends StateNotifier<List<Place>> {
-  final PlaceService _placeService;
+  const PlacesState({
+    this.places = const [],
+    this.isLoading = false,
+    this.error,
+  });
 
-  PlacesNotifier(this._placeService) : super([]) {
-    _init();
+  PlacesState copyWith({
+    List<Place>? places,
+    bool? isLoading,
+    String? error,
+  }) {
+    return PlacesState(
+      places: places ?? this.places,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}
+
+// Places Notifier
+class PlacesNotifier extends StateNotifier<PlacesState> {
+  PlacesNotifier() : super(const PlacesState()) {
+    loadPlaces(); // Auto load places when provider is created
   }
 
-  /// Load semua place saat inisialisasi
-  Future<void> _init() async {
-    await loadPlaces();
-  }
-
-  /// Memuat semua place dari service
-  Future<void> loadPlaces() async {
+  // Get place by ID from local state first, then from API if not found
+  Future<Place?> getPlaceById(String id) async {
     try {
-      final places = await _placeService.getPlaces();
-      state = places;
-
-      // Debug
-      print('=== DEBUG: Loaded ${places.length} Places ===');
-      for (var place in places) {
-        print('Place: ${place.name} - ID: ${place.id}');
+      // First, try to find in local state
+      final localPlace = state.places.where((place) => place.id == id).firstOrNull;
+      if (localPlace != null) {
+        return localPlace;
       }
-      print('=== END DEBUG ===');
-    } catch (e) {
-      print('Error loading places: $e');
-      state = [];
-    }
-  }
-
-  /// Tambah place baru
-  Future<void> addPlace(Place place) async {
-    try {
-      final updatedList = await _placeService.addPlace(place);
-      state = updatedList;
-      print('DEBUG: Added place - ${place.name}');
-    } catch (e) {
-      print('Error adding place: $e');
-    }
-  }
-
-  /// Update place
-  Future<void> updatePlace(Place place) async {
-    try {
-      final updatedList = await _placeService.updatePlace(place);
-      state = updatedList;
-      print('DEBUG: Updated place - ${place.name}');
-    } catch (e) {
-      print('Error updating place: $e');
-    }
-  }
-
-  /// Hapus place
-  Future<void> deletePlace(String id) async {
-    try {
-      final updatedList = await _placeService.deletePlace(id);
-      state = updatedList;
-      print('DEBUG: Deleted place with ID: $id');
-    } catch (e) {
-      print('Error deleting place: $e');
-    }
-  }
-
-  /// Simpan gambar secara lokal
-  Future<String> saveImageLocally(File imageFile) async {
-    return await _placeService.saveImageLocally(imageFile);
-  }
-
-  /// Ambil place berdasarkan ID
-  Place? getPlaceById(dynamic id) {
-    try {
-      final place = state.firstWhere((place) => place.id.toString() == id.toString());
+      
+      // If not found locally, fetch from API
+      final place = await ApiService.getPlaceById(id);
+      
+      // Update local state with the fetched place
+      final updatedPlaces = [...state.places];
+      final existingIndex = updatedPlaces.indexWhere((p) => p.id == id);
+      if (existingIndex != -1) {
+        updatedPlaces[existingIndex] = place;
+      } else {
+        updatedPlaces.add(place);
+      }
+      
+      state = state.copyWith(places: updatedPlaces);
       return place;
     } catch (e) {
-      print('DEBUG: Place not found with ID: $id');
+      print('Error getting place by ID: $e');
       return null;
     }
   }
 
-
-  /// Force refresh satu place berdasarkan ID
-  Future<Place?> refreshPlaceById(String id) async {
-    await loadPlaces();
-    return getPlaceById(id);
-  }
-
-  /// Refresh semua data place
-  Future<void> forceRefresh() async {
-    await loadPlaces();
-  }
-
-  /// Debug print semua place
-  void debugPrintAllPlaces() {
-    print('=== DEBUG: All Places in State ===');
-    for (var place in state) {
-      print('Name: ${place.name}, ID: ${place.id}, Location: ${place.location}');
+  // Get place by ID synchronously from local state only
+  Place? getPlaceByIdSync(String id) {
+    try {
+      return state.places.where((place) => place.id == id).firstOrNull;
+    } catch (e) {
+      print('Error getting place by ID sync: $e');
+      return null;
     }
-    print('=== END DEBUG ===');
+  }
+
+  // Load all places
+  Future<void> loadPlaces() async {
+    state = state.copyWith(isLoading: true, error: null);
+    
+    try {
+      final places = await ApiService.getAllPlaces();
+      state = state.copyWith(
+        places: places,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Load places by category
+  Future<void> loadPlacesByCategory(String category) async {
+    state = state.copyWith(isLoading: true, error: null);
+    
+    try {
+      final places = await ApiService.getPlacesByCategory(category);
+      state = state.copyWith(
+        places: places,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Add new place
+  Future<bool> addPlace(Place place) async {
+    state = state.copyWith(isLoading: true, error: null);
+    
+    try {
+      final newPlace = await ApiService.createPlace(
+        name: place.name,
+        location: place.location,
+        description: place.description ??'',
+        weekdaysHours: place.weekdaysHours ??'',
+        weekendHours: place.weekendHours ??'',
+        price: place.price,
+        weekendPrice: place.weekendPrice ??0,
+        weekdayPrice: place.weekdayPrice ??0,
+        category: place.category ?? '',
+        facilities: place.facilities ?? [],
+        latitude: place.latitude ?? 0.0,
+        longitude: place.longitude ?? 0.0,
+        mainImage: place.isLocalImage && place.image.isNotEmpty 
+            ? File(place.image) 
+            : null,
+        additionalImages: (place.additionalImages ?? [])
+            .map((path) => File(path))
+            .toList(),
+      );
+
+      // Update local state
+      final updatedPlaces = [...state.places, newPlace];
+      state = state.copyWith(
+        places: updatedPlaces,
+        isLoading: false,
+      );
+      
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  // Update place
+  Future<bool> updatePlace(String id, Place place) async {
+    state = state.copyWith(isLoading: true, error: null);
+    
+    try {
+      final updatedPlace = await ApiService.updatePlace(
+        id: id,
+        name: place.name,
+        location: place.location,
+        description: place.description ??'',
+        weekdaysHours: place.weekdaysHours ??'',
+        weekendHours: place.weekendHours ??'',
+        price: place.price,
+        weekendPrice: place.weekendPrice ??0,
+        weekdayPrice: place.weekdayPrice ??0,
+        category: place.category ?? '',
+        facilities: place.facilities ?? [],
+        latitude: place.latitude ?? 0.0,
+        longitude: place.longitude ?? 0.0,
+        newImages: (place.additionalImages ?? [])
+            .where((path) => path.startsWith('/'))  // Local file paths
+            .map((path) => File(path))
+            .toList(),
+        existingImages: (place.additionalImages ?? [])
+            .where((path) => path.startsWith('http'))  // URL paths
+            .toList(),
+      );
+
+      // Update local state
+      final updatedPlaces = state.places.map((p) => 
+        p.id == id ? updatedPlace : p
+      ).toList();
+      
+      state = state.copyWith(
+        places: updatedPlaces,
+        isLoading: false,
+      );
+      
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  // Delete place
+  Future<bool> deletePlace(String id) async {
+    state = state.copyWith(isLoading: true, error: null);
+    
+    try {
+      await ApiService.deletePlace(id);
+
+      // Update local state
+      final updatedPlaces = state.places.where((p) => p.id != id).toList();
+      state = state.copyWith(
+        places: updatedPlaces,
+        isLoading: false,
+      );
+      
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  // Clear error
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
+
+  // Refresh places
+  Future<void> refresh() async {
+    await loadPlaces();
   }
 }
 
-/// Provider untuk PlacesNotifier
-final placesNotifierProvider =
-    StateNotifierProvider<PlacesNotifier, List<Place>>((ref) {
-  final placeService = ref.watch(placeServiceProvider);
-  return PlacesNotifier(placeService);
+// Provider
+final placesNotifierProvider = StateNotifierProvider<PlacesNotifier, PlacesState>((ref) {
+  return PlacesNotifier();
 });
 
-/// Provider untuk selected place (biasanya untuk edit/update)
-final selectedPlaceProvider = StateProvider<Place?>((ref) => null);
-/// Provider untuk mendapatkan Place berdasarkan ID
-final placeByIdProvider = Provider.family<Place?, dynamic>((ref, dynamic id) {
-  final places = ref.watch(placesNotifierProvider);
-  
-  try {
-    final place = places.firstWhere((place) => place.id.toString() == id.toString());
-    return place;
-  } catch (e) {
-    print('DEBUG: Place with ID $id not found');
-    return null;
+// Computed providers
+final placesProvider = Provider<List<Place>>((ref) {
+  return ref.watch(placesNotifierProvider).places;
+});
+
+final isLoadingProvider = Provider<bool>((ref) {
+  return ref.watch(placesNotifierProvider).isLoading;
+});
+
+final errorProvider = Provider<String?>((ref) {
+  return ref.watch(placesNotifierProvider).error;
+});
+
+// Provider for places by category
+final placesByCategoryProvider = Provider.family<List<Place>, String?>((ref, category) {
+  final places = ref.watch(placesProvider);
+  if (category == null || category.isEmpty) {
+    return places;
   }
+  return places.where((place) => place.category == category).toList();
 });
-

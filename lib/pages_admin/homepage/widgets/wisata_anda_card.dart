@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:j_tour/pages_admin/place/place_detail_page.dart';
+
 
 class WisataAndaCard extends ConsumerWidget {
   final Place place;
@@ -50,23 +50,23 @@ class WisataAndaCard extends ConsumerWidget {
 
             final latestPlace = await ref.read(placesNotifierProvider.notifier).getPlaceById(place.id);
 
-            if (latestPlace != null) {
-              print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PlaceDetailPage(place: latestPlace),
-                ),
-              );
-            } else {
-              print('DEBUG: Latest place not found for Kelola, using original place data');
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PlaceDetailPage(place: place),
-                ),
-              );
-            }
+            // if (latestPlace != null) {
+            //   print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
+            //   Navigator.push(
+            //     context,
+            //     MaterialPageRoute(
+            //       builder: (context) => PlaceDetailPage(place: latestPlace),
+            //     ),
+            //   );
+            // } else {
+            //   print('DEBUG: Latest place not found for Kelola, using original place data');
+            //   Navigator.push(
+            //     context,
+            //     MaterialPageRoute(
+            //       builder: (context) => PlaceDetailPage(place: place),
+            //     ),
+            //   );
+            // }
           },
 
 
@@ -238,27 +238,27 @@ class WisataAndaCard extends ConsumerWidget {
                                 // Pastikan kita mendapatkan data terbaru dari provider
                                 final latestPlace = ref.read(placesNotifierProvider.notifier).getPlaceById(place.id);
                                 
-                                if (latestPlace != null) {
-                                  print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PlaceDetailPage(
-                                        place: latestPlace, // Gunakan data terbaru
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  print('DEBUG: Latest place not found for Kelola, using original place data');
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PlaceDetailPage(
-                                        place: place, // Fallback ke data original
-                                      ),
-                                    ),
-                                  );
-                                }
+                                // if (latestPlace != null) {
+                                //   print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
+                                //   Navigator.push(
+                                //     context,
+                                //     MaterialPageRoute(
+                                //       builder: (context) => PlaceDetailPage(
+                                //         place: latestPlace, // Gunakan data terbaru
+                                //       ),
+                                //     ),
+                                //   );
+                                // } else {
+                                //   print('DEBUG: Latest place not found for Kelola, using original place data');
+                                //   Navigator.push(
+                                //     context,
+                                //     MaterialPageRoute(
+                                //       builder: (context) => PlaceDetailPage(
+                                //         place: place, // Fallback ke data original
+                                //       ),
+                                //     ),
+                                //   );
+                                // }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.black.withOpacity(0.7),
