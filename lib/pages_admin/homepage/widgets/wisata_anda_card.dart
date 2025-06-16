@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
+import 'package:j_tour/pages/place/place_detail.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:intl/intl.dart';
 
@@ -256,24 +257,24 @@ class WisataAndaCard extends ConsumerWidget {
                                     if (latestPlace != null) {
                                       print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
                                       // Uncomment and replace with your actual navigation
-                                      // Navigator.push(
-                                      //   context,
-                                      //   MaterialPageRoute(
-                                      //     builder: (context) => PlaceDetailPage(
-                                      //       place: latestPlace, // Gunakan data terbaru
-                                      //     ),
-                                      //   ),
-                                      // );
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => PlaceDetailPage(
+                                            place: latestPlace, // Gunakan data terbaru
+                                          ),
+                                        ),
+                                      );
                                     } else {
                                       print('DEBUG: Latest place not found for Kelola, using original place data');
-                                      // Navigator.push(
-                                      //   context,
-                                      //   MaterialPageRoute(
-                                      //     builder: (context) => PlaceDetailPage(
-                                      //       place: place, // Fallback ke data original
-                                      //     ),
-                                      //   ),
-                                      // );
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => PlaceDetailPage(
+                                            place: place, // Fallback ke data original
+                                          ),
+                                        ),
+                                      );
                                     }
                                   }
                                 } catch (e) {

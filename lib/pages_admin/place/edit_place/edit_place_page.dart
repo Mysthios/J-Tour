@@ -6,6 +6,12 @@ import 'package:j_tour/models/place_model.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:j_tour/pages_admin/place/edit_place/widgets/2.1_image_pciker_widgets.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.2_basic_info_widget.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.3_district_dropdown_widget.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.4_location_picker_widget.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.5_operating_hours_widget.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.6_pricing_widget.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.7_facilities_widget.dart';
 
 
 
@@ -40,41 +46,69 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
   void initState() {
     super.initState();
     _initializeControllers();
-    _initializeData();
   }
 
-  void _initializeControllers() {
-    final currencyFormatter = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: '',
-      decimalDigits: 0,
-    );
+void _initializeControllers() {
+  final currencyFormatter = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: '',
+    decimalDigits: 0,
+  );
 
-    _nameController = TextEditingController(text: widget.place.name);
-    _locationController = TextEditingController(text: widget.place.location);
-    _descriptionController =
-        TextEditingController(text: widget.place.description);
-    _weekdaysHoursController =
-        TextEditingController(text: widget.place.weekdaysHours);
-    _weekendHoursController =
-        TextEditingController(text: widget.place.weekendHours);
-    _priceController = TextEditingController(
-      text: currencyFormatter.format(widget.place.price),
-    );
-    _weekendPriceController = TextEditingController(
-      text: currencyFormatter.format(widget.place.weekendPrice),
-    );
+  _nameController = TextEditingController(text: widget.place.name);
+  _locationController = TextEditingController(text: widget.place.location);
+  _descriptionController =
+      TextEditingController(text: widget.place.description);
+  _weekdaysHoursController =
+      TextEditingController(text: widget.place.weekdaysHours);
+  _weekendHoursController =
+      TextEditingController(text: widget.place.weekendHours);
+  _priceController = TextEditingController(
+    text: currencyFormatter.format(widget.place.price ?? 0),
+  );
+  _weekendPriceController = TextEditingController(
+    text: currencyFormatter.format(widget.place.weekendPrice ?? 0),
+  );
 
-    _selectedCategory = widget.place.category;
-    _selectedLocation = LatLng(widget.place.latitude, widget.place.longitude);
-    _facilities = List.from(widget.place.facilities);
-    _additionalImages = List.from(widget.place.additionalImages);
-
-    // Jika gambar utama adalah lokal, set sebagai File
-    if (widget.place.isLocalImage && widget.place.image.isNotEmpty) {
-      _selectedImage = File(widget.place.image);
-    }
+  _selectedCategory = widget.place.category;
+  if (widget.place.latitude != null && widget.place.longitude != null) {
+    _selectedLocation = LatLng(widget.place.latitude!, widget.place.longitude!);
+  } else {
+    _selectedLocation = null;
   }
+  _facilities = List.from(widget.place.facilities ?? []);
+  _additionalImages = List.from(widget.place.additionalImages ?? []);
+  
+  // Validasi field yang diperlukan
+  List<String> missingFields = [];
+  
+  if (widget.place.name?.isEmpty ?? true) missingFields.add('Nama');
+  if (widget.place.location?.isEmpty ?? true) missingFields.add('Lokasi');
+  if (widget.place.description?.isEmpty ?? true) missingFields.add('Deskripsi');
+  if (widget.place.weekdaysHours?.isEmpty ?? true) missingFields.add('Jam Operasional Weekdays');
+  if (widget.place.weekendHours?.isEmpty ?? true) missingFields.add('Jam Operasional Weekend');
+  if (widget.place.price == null || widget.place.price == 0) missingFields.add('Harga Weekdays');
+  if (widget.place.weekendPrice == null || widget.place.weekendPrice == 0) missingFields.add('Harga Weekend');
+  if (widget.place.category?.isEmpty ?? true) missingFields.add('Kategori');
+  if (widget.place.facilities?.isEmpty ?? true) missingFields.add('Fasilitas');
+  if (widget.place.latitude == null) missingFields.add('Latitude');
+  if (widget.place.longitude == null) missingFields.add('Longitude');
+  
+  if (missingFields.isNotEmpty) {
+    Future.microtask(() {
+      _showErrorSnackBar('Field berikut belum diisi: ${missingFields.join(', ')}');
+    });
+  } else {
+    Future.microtask(() {
+      _showSuccessSnackBar('Semua field sudah terisi dengan lengkap.');
+    });
+  }
+  
+  // Jika gambar utama adalah lokal, set sebagai File
+  if (widget.place.isLocalImage && (widget.place.image?.isNotEmpty ?? false)) {
+    _selectedImage = File(widget.place.image!);
+  }
+}
 
   @override
   void dispose() {
