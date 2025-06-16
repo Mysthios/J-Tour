@@ -39,14 +39,15 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
   Future<Place?> getPlaceById(String id) async {
     try {
       // First, try to find in local state
-      final localPlace = state.places.where((place) => place.id == id).firstOrNull;
+      final localPlace =
+          state.places.where((place) => place.id == id).firstOrNull;
       if (localPlace != null) {
         return localPlace;
       }
-      
+
       // If not found locally, fetch from API
       final place = await ApiService.getPlaceById(id);
-      
+
       // Update local state with the fetched place
       final updatedPlaces = [...state.places];
       final existingIndex = updatedPlaces.indexWhere((p) => p.id == id);
@@ -55,7 +56,7 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
       } else {
         updatedPlaces.add(place);
       }
-      
+
       state = state.copyWith(places: updatedPlaces);
       return place;
     } catch (e) {
@@ -77,7 +78,7 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
   // Load all places
   Future<void> loadPlaces() async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     try {
       final places = await ApiService.getAllPlaces();
       state = state.copyWith(
@@ -85,6 +86,7 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
         isLoading: false,
       );
     } catch (e) {
+      print('Error loading places: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -95,7 +97,7 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
   // Load places by category
   Future<void> loadPlacesByCategory(String category) async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     try {
       final places = await ApiService.getPlacesByCategory(category);
       state = state.copyWith(
@@ -103,6 +105,7 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
         isLoading: false,
       );
     } catch (e) {
+      print('Error loading places by category: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -110,41 +113,95 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
     }
   }
 
-  // Add new place
+  // Add new place - IMPROVED ERROR HANDLING
   Future<bool> addPlace(Place place) async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     try {
+      print('=== PROVIDER ADD PLACE DEBUG ===');
+      print('Starting to add place: ${place.name}');
+      
+      // Validate required fields
+      if (place.name.trim().isEmpty) {
+        throw Exception('Nama tempat wisata harus diisi');
+      }
+      if (place.location.trim().isEmpty) {
+        throw Exception('Lokasi harus diisi');
+      }
+      if (place.category == null || place.category!.trim().isEmpty) {
+        throw Exception('Kategori harus dipilih');
+      }
+      if (place.latitude == null || place.longitude == null) {
+        throw Exception('Koordinat lokasi harus diisi');
+      }
+      if (place.weekdayPrice == null || place.weekdayPrice! < 0) {
+        throw Exception('Harga hari kerja tidak valid');
+      }
+      if (place.weekendPrice == null || place.weekendPrice! < 0) {
+        throw Exception('Harga akhir pekan tidak valid');
+      }
+      
+      // Prepare main image
+      File? mainImageFile;
+      if (place.isLocalImage && place.image.isNotEmpty) {
+        mainImageFile = File(place.image);
+        print('Main image prepared: ${mainImageFile.path}');
+        
+        // Verify file exists
+        bool exists = await mainImageFile.exists();
+        if (!exists) {
+          throw Exception('File gambar utama tidak ditemukan: ${mainImageFile.path}');
+        }
+      }
+
+      // Prepare additional images
+      List<File> additionalImageFiles = [];
+      if (place.additionalImages != null && place.additionalImages!.isNotEmpty) {
+        print('Processing ${place.additionalImages!.length} additional images');
+        for (String path in place.additionalImages!) {
+          File file = File(path);
+          bool exists = await file.exists();
+          if (exists) {
+            additionalImageFiles.add(file);
+            print('Additional image added: ${file.path}');
+          } else {
+            print('Additional image file not found: $path');
+          }
+        }
+      }
+
+      print('Total images prepared: ${additionalImageFiles.length + (mainImageFile != null ? 1 : 0)}');
+
+      // Create place via API
       final newPlace = await ApiService.createPlace(
-        name: place.name,
-        location: place.location,
-        description: place.description ??'',
-        weekdaysHours: place.weekdaysHours ??'',
-        weekendHours: place.weekendHours ??'',
-        price: place.price,
-        weekendPrice: place.weekendPrice ??0,
-        weekdayPrice: place.weekdayPrice ??0,
-        category: place.category ?? '',
+        name: place.name.trim(),
+        location: place.location.trim(),
+        description: place.description?.trim() ?? '',
+        weekdaysHours: place.weekdaysHours?.trim() ?? '',
+        weekendHours: place.weekendHours?.trim() ?? '',
+        price: place.price ?? 0,
+        weekendPrice: place.weekendPrice ?? 0,
+        weekdayPrice: place.weekdayPrice ?? 0,
+        category: place.category!.trim(),
         facilities: place.facilities ?? [],
-        latitude: place.latitude ?? 0.0,
-        longitude: place.longitude ?? 0.0,
-        mainImage: place.isLocalImage && place.image.isNotEmpty 
-            ? File(place.image) 
-            : null,
-        additionalImages: (place.additionalImages ?? [])
-            .map((path) => File(path))
-            .toList(),
+        latitude: place.latitude!,
+        longitude: place.longitude!,
+        mainImage: mainImageFile,
+        additionalImages: additionalImageFiles.isNotEmpty ? additionalImageFiles : null,
       );
 
-      // Update local state
+      print('Place created successfully: ${newPlace.id}');
+
+      // Update local state with new place
       final updatedPlaces = [...state.places, newPlace];
       state = state.copyWith(
         places: updatedPlaces,
         isLoading: false,
       );
-      
+
       return true;
     } catch (e) {
+      print('Error in addPlace provider: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -153,46 +210,98 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
     }
   }
 
-  // Update place
-  Future<bool> updatePlace(String id, Place place) async {
+  // Update existing place - IMPROVED ERROR HANDLING
+  Future<bool> updatePlace(String id, Place updatedPlace) async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     try {
-      final updatedPlace = await ApiService.updatePlace(
+      print('=== PROVIDER UPDATE PLACE DEBUG ===');
+      print('Updating place ID: $id');
+      
+      // Validate required fields
+      if (updatedPlace.name.trim().isEmpty) {
+        throw Exception('Nama tempat wisata harus diisi');
+      }
+      if (updatedPlace.location.trim().isEmpty) {
+        throw Exception('Lokasi harus diisi');
+      }
+      if (updatedPlace.category == null || updatedPlace.category!.trim().isEmpty) {
+        throw Exception('Kategori harus dipilih');
+      }
+      if (updatedPlace.latitude == null || updatedPlace.longitude == null) {
+        throw Exception('Koordinat lokasi harus diisi');
+      }
+      if (updatedPlace.weekdayPrice == null || updatedPlace.weekdayPrice! < 0) {
+        throw Exception('Harga hari kerja tidak valid');
+      }
+      if (updatedPlace.weekendPrice == null || updatedPlace.weekendPrice! < 0) {
+        throw Exception('Harga akhir pekan tidak valid');
+      }
+
+      // Prepare new images (if any)
+      List<File> newImageFiles = [];
+      if (updatedPlace.additionalImages != null && updatedPlace.additionalImages!.isNotEmpty) {
+        for (String path in updatedPlace.additionalImages!) {
+          // Check if this is a local file path (not a URL)
+          if (!path.startsWith('http') && !path.startsWith('https')) {
+            File file = File(path);
+            bool exists = await file.exists();
+            if (exists) {
+              newImageFiles.add(file);
+              print('New image added: ${file.path}');
+            } else {
+              print('New image file not found: $path');
+            }
+          }
+        }
+      }
+
+      // Prepare existing images (URLs to keep)
+      List<String> existingImageUrls = [];
+      if (updatedPlace.additionalImages != null && updatedPlace.additionalImages!.isNotEmpty) {
+        for (String path in updatedPlace.additionalImages!) {
+          // Keep existing URLs
+          if (path.startsWith('http') || path.startsWith('https')) {
+            existingImageUrls.add(path);
+            print('Existing image to keep: $path');
+          }
+        }
+      }
+
+      // Update place via API
+      final updated = await ApiService.updatePlace(
         id: id,
-        name: place.name,
-        location: place.location,
-        description: place.description ??'',
-        weekdaysHours: place.weekdaysHours ??'',
-        weekendHours: place.weekendHours ??'',
-        price: place.price,
-        weekendPrice: place.weekendPrice ??0,
-        weekdayPrice: place.weekdayPrice ??0,
-        category: place.category ?? '',
-        facilities: place.facilities ?? [],
-        latitude: place.latitude ?? 0.0,
-        longitude: place.longitude ?? 0.0,
-        newImages: (place.additionalImages ?? [])
-            .where((path) => path.startsWith('/'))  // Local file paths
-            .map((path) => File(path))
-            .toList(),
-        existingImages: (place.additionalImages ?? [])
-            .where((path) => path.startsWith('http'))  // URL paths
-            .toList(),
+        name: updatedPlace.name.trim(),
+        location: updatedPlace.location.trim(),
+        description: updatedPlace.description?.trim() ?? '',
+        weekdaysHours: updatedPlace.weekdaysHours?.trim() ?? '',
+        weekendHours: updatedPlace.weekendHours?.trim() ?? '',
+        price: updatedPlace.price ?? 0,
+        weekendPrice: updatedPlace.weekendPrice ?? 0,
+        weekdayPrice: updatedPlace.weekdayPrice ?? 0,
+        category: updatedPlace.category!.trim(),
+        facilities: updatedPlace.facilities ?? [],
+        latitude: updatedPlace.latitude!,
+        longitude: updatedPlace.longitude!,
+        newImages: newImageFiles.isNotEmpty ? newImageFiles : null,
+        existingImages: existingImageUrls.isNotEmpty ? existingImageUrls : null,
       );
 
+      print('Place updated successfully: ${updated.id}');
+
       // Update local state
-      final updatedPlaces = state.places.map((p) => 
-        p.id == id ? updatedPlace : p
-      ).toList();
-      
+      final updatedPlaces = state.places.map((place) {
+        return place.id == id ? updated : place;
+      }).toList();
+
       state = state.copyWith(
         places: updatedPlaces,
         isLoading: false,
       );
-      
+
       return true;
     } catch (e) {
+      print('Error in updatePlace provider: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -204,19 +313,27 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
   // Delete place
   Future<bool> deletePlace(String id) async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     try {
+      print('=== PROVIDER DELETE PLACE DEBUG ===');
+      print('Deleting place ID: $id');
+
+      // Delete place via API
       await ApiService.deletePlace(id);
 
-      // Update local state
-      final updatedPlaces = state.places.where((p) => p.id != id).toList();
+      print('Place deleted successfully: $id');
+
+      // Update local state by removing the deleted place
+      final updatedPlaces = state.places.where((place) => place.id != id).toList();
+      
       state = state.copyWith(
         places: updatedPlaces,
         isLoading: false,
       );
-      
+
       return true;
     } catch (e) {
+      print('Error in deletePlace provider: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -225,40 +342,97 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
     }
   }
 
+  // Refresh places - useful for pull-to-refresh
+  Future<void> refreshPlaces() async {
+    await loadPlaces();
+  }
+
   // Clear error
   void clearError() {
     state = state.copyWith(error: null);
   }
 
-  // Refresh places
-  Future<void> refresh() async {
-    await loadPlaces();
+  // Search places locally
+  List<Place> searchPlaces(String query) {
+    if (query.trim().isEmpty) {
+      return state.places;
+    }
+
+    final lowercaseQuery = query.toLowerCase();
+    return state.places.where((place) {
+      return place.name.toLowerCase().contains(lowercaseQuery) ||
+             place.location.toLowerCase().contains(lowercaseQuery) ||
+             (place.category?.toLowerCase().contains(lowercaseQuery) ?? false) ||
+             (place.description?.toLowerCase().contains(lowercaseQuery) ?? false);
+    }).toList();
+  }
+
+  // Get places by category from local state
+  List<Place> getPlacesByCategoryLocal(String category) {
+    return state.places.where((place) => place.category == category).toList();
+  }
+
+  // Get unique categories from local places
+  List<String> getAvailableCategories() {
+    final categories = <String>{};
+    for (final place in state.places) {
+      if (place.category != null && place.category!.isNotEmpty) {
+        categories.add(place.category!);
+      }
+    }
+    return categories.toList()..sort();
+  }
+
+  // Get unique locations from local places
+  List<String> getAvailableLocations() {
+    final locations = <String>{};
+    for (final place in state.places) {
+      if (place.location.isNotEmpty) {
+        locations.add(place.location);
+      }
+    }
+    return locations.toList()..sort();
   }
 }
 
-// Provider
-final placesNotifierProvider = StateNotifierProvider<PlacesNotifier, PlacesState>((ref) {
+// Provider instance
+final placesProvider = StateNotifierProvider<PlacesNotifier, PlacesState>((ref) {
   return PlacesNotifier();
 });
 
-// Computed providers
-final placesProvider = Provider<List<Place>>((ref) {
-  return ref.watch(placesNotifierProvider).places;
+// Helper providers for easy access
+final placesListProvider = Provider<List<Place>>((ref) {
+  return ref.watch(placesProvider).places;
 });
 
-final isLoadingProvider = Provider<bool>((ref) {
-  return ref.watch(placesNotifierProvider).isLoading;
+final placesLoadingProvider = Provider<bool>((ref) {
+  return ref.watch(placesProvider).isLoading;
 });
 
-final errorProvider = Provider<String?>((ref) {
-  return ref.watch(placesNotifierProvider).error;
+final placesErrorProvider = Provider<String?>((ref) {
+  return ref.watch(placesProvider).error;
 });
 
-// Provider for places by category
-final placesByCategoryProvider = Provider.family<List<Place>, String?>((ref, category) {
-  final places = ref.watch(placesProvider);
-  if (category == null || category.isEmpty) {
-    return places;
-  }
-  return places.where((place) => place.category == category).toList();
+// Provider for searching places
+final placesSearchProvider = Provider.family<List<Place>, String>((ref, query) {
+  final notifier = ref.read(placesProvider.notifier);
+  return notifier.searchPlaces(query);
+});
+
+// Provider for getting places by category
+final placesByCategoryProvider = Provider.family<List<Place>, String>((ref, category) {
+  final notifier = ref.read(placesProvider.notifier);
+  return notifier.getPlacesByCategoryLocal(category);
+});
+
+// Provider for getting available categories
+final availableCategoriesProvider = Provider<List<String>>((ref) {
+  final notifier = ref.read(placesProvider.notifier);
+  return notifier.getAvailableCategories();
+});
+
+// Provider for getting available locations
+final availableLocationsProvider = Provider<List<String>>((ref) {
+  final notifier = ref.read(placesProvider.notifier);
+  return notifier.getAvailableLocations();
 });

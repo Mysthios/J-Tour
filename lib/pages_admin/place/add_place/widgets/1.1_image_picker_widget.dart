@@ -1,7 +1,7 @@
-// widgets/image_picker_widgets.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 import 'package:j_tour/core/constan.dart';
 
 class ImagePickerWidgets extends StatelessWidget {
@@ -33,7 +33,6 @@ class ImagePickerWidgets extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Handle bar
               Container(
                 width: 48,
                 height: 4,
@@ -43,8 +42,6 @@ class ImagePickerWidgets extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
-              // Title
               Text(
                 'Pilih Foto Utama',
                 style: TextStyle(
@@ -62,8 +59,6 @@ class ImagePickerWidgets extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              
-              // Options
               Row(
                 children: [
                   Expanded(
@@ -108,7 +103,6 @@ class ImagePickerWidgets extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Handle bar
               Container(
                 width: 48,
                 height: 4,
@@ -118,8 +112,6 @@ class ImagePickerWidgets extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
-              // Title
               Text(
                 'Tambah Foto',
                 style: TextStyle(
@@ -137,8 +129,6 @@ class ImagePickerWidgets extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              
-              // Options
               Row(
                 children: [
                   Expanded(
@@ -244,37 +234,38 @@ class ImagePickerWidgets extends StatelessWidget {
       );
 
       if (pickedFile != null) {
-        onMainImageChanged(File(pickedFile.path));
-
-        // Close bottom sheet
-        Navigator.of(context).pop();
-
-        // Show modern success snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle_rounded, color: Colors.white),
-                const SizedBox(width: 12),
-                Text('Foto utama berhasil diubah'),
-              ],
+        final mimeType = lookupMimeType(pickedFile.path);
+        print('Picked main image: ${pickedFile.path} (MIME: $mimeType)');
+        if (mimeType != null && mimeType.startsWith('image/')) {
+          onMainImageChanged(File(pickedFile.path));
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text('Foto utama berhasil diubah'),
+                ],
+              ),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
             ),
-            backgroundColor: Colors.green[600],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
+          );
+        } else {
+          throw Exception('Hanya file gambar (JPEG, PNG, WebP) yang diizinkan');
+        }
       }
     } catch (e) {
-      // Handle error with modern snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               Icon(Icons.error_rounded, color: Colors.white),
               const SizedBox(width: 12),
-              Expanded(child: Text('Error: ${e.toString()}')),
+              Expanded(child: Text('Gagal memilih gambar: ${e.toString()}')),
             ],
           ),
           backgroundColor: Colors.red[600],
@@ -289,47 +280,99 @@ class ImagePickerWidgets extends StatelessWidget {
   Future<void> _pickAdditionalImage(BuildContext context, ImageSource source) async {
     try {
       final ImagePicker picker = ImagePicker();
-      final XFile? pickedFile = await picker.pickImage(
-        source: source,
-        maxWidth: 1200,
-        maxHeight: 800,
-        imageQuality: 80,
-      );
+      final List<XFile> pickedFiles = source == ImageSource.gallery
+          ? await picker.pickMultiImage(
+              maxWidth: 1200,
+              maxHeight: 800,
+              imageQuality: 80,
+            )
+          : [
+              await picker.pickImage(
+                source: source,
+                maxWidth: 1200,
+                maxHeight: 800,
+                imageQuality: 80,
+              ),
+            ].whereType<XFile>().toList();
 
-      if (pickedFile != null) {
+      if (pickedFiles.isNotEmpty) {
         final updatedImages = List<String>.from(additionalImages);
-        updatedImages.add(pickedFile.path);
-        onAdditionalImagesChanged(updatedImages);
+        final invalidFiles = <String>[];
+        for (var file in pickedFiles) {
+          final mimeType = lookupMimeType(file.path);
+          print('Picked additional image: ${file.path} (MIME: $mimeType)');
+          if (mimeType != null && mimeType.startsWith('image/')) {
+            updatedImages.add(file.path);
+          } else {
+            invalidFiles.add(file.path);
+          }
+        }
 
-        // Close bottom sheet
-        Navigator.of(context).pop();
-
-        // Show modern success snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle_rounded, color: Colors.white),
-                const SizedBox(width: 12),
-                Text('Foto tambahan berhasil ditambahkan'),
-              ],
+        if (invalidFiles.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('Beberapa file bukan gambar (JPEG, PNG, WebP)')),
+                ],
+              ),
+              backgroundColor: Colors.red[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
             ),
-            backgroundColor: Colors.green[600],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
+          );
+        }
+
+        if (updatedImages.length > 10) {
+          updatedImages.removeRange(10, updatedImages.length);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.warning_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text('Maksimum 10 foto tambahan'),
+                ],
+              ),
+              backgroundColor: Colors.orange[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
+
+        if (updatedImages.length > additionalImages.length) {
+          onAdditionalImagesChanged(updatedImages);
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text('${updatedImages.length - additionalImages.length} foto tambahan ditambahkan'),
+                ],
+              ),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
       }
     } catch (e) {
-      // Handle error with modern snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               Icon(Icons.error_rounded, color: Colors.white),
               const SizedBox(width: 12),
-              Expanded(child: Text('Error: ${e.toString()}')),
+              Expanded(child: Text('Gagal memilih gambar: ${e.toString()}')),
             ],
           ),
           backgroundColor: Colors.red[600],
@@ -352,7 +395,6 @@ class ImagePickerWidgets extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Main Image section with modern design
         Center(
           child: Container(
             decoration: BoxDecoration(
@@ -384,6 +426,11 @@ class ImagePickerWidgets extends StatelessWidget {
                           child: Image.file(
                             selectedImage!,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.error_rounded,
+                              size: 48,
+                              color: kBlackColor.withOpacity(0.4),
+                            ),
                           ),
                         )
                       : Container(
@@ -455,8 +502,6 @@ class ImagePickerWidgets extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 32),
-
-        // Additional Images section with modern header
         Row(
           children: [
             Container(
@@ -495,8 +540,6 @@ class ImagePickerWidgets extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        
-        // Modern additional images grid
         SizedBox(
           height: 120,
           child: ListView.builder(
@@ -589,6 +632,11 @@ class ImagePickerWidgets extends StatelessWidget {
                           width: 120,
                           height: 120,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Icons.error_rounded,
+                            size: 48,
+                            color: kBlackColor.withOpacity(0.4),
+                          ),
                         ),
                       ),
                     ),

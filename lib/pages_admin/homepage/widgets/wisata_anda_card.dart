@@ -5,7 +5,6 @@ import 'package:j_tour/models/place_model.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:intl/intl.dart';
 
-
 class WisataAndaCard extends ConsumerWidget {
   final Place place;
   const WisataAndaCard({super.key, required this.place});
@@ -43,33 +42,47 @@ class WisataAndaCard extends ConsumerWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () async {
-            print('=== KELOLA BUTTON DEBUG ===');
-            print('Kelola button clicked: ${place.name}');
-            print('Place ID: ${place.id}');
-            print('=== END KELOLA BUTTON DEBUG ===');
+              print('=== CARD TAP DEBUG ===');
+              print('Card tapped: ${place.name}');
+              print('Place ID: ${place.id}');
+              print('=== END CARD TAP DEBUG ===');
 
-            final latestPlace = await ref.read(placesNotifierProvider.notifier).getPlaceById(place.id);
+              try {
+                final latestPlace = await ref.read(placesProvider.notifier).getPlaceById(place.id);
 
-            // if (latestPlace != null) {
-            //   print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
-            //   Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => PlaceDetailPage(place: latestPlace),
-            //     ),
-            //   );
-            // } else {
-            //   print('DEBUG: Latest place not found for Kelola, using original place data');
-            //   Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (context) => PlaceDetailPage(place: place),
-            //     ),
-            //   );
-            // }
-          },
-
-
+                if (context.mounted) { // Check if widget is still mounted
+                  if (latestPlace != null) {
+                    print('DEBUG: Using latest place data: ${latestPlace.name}');
+                    // Uncomment and replace with your actual navigation
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (context) => PlaceDetailPage(place: latestPlace),
+                    //   ),
+                    // );
+                  } else {
+                    print('DEBUG: Latest place not found, using original place data');
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (context) => PlaceDetailPage(place: place),
+                    //   ),
+                    // );
+                  }
+                }
+              } catch (e) {
+                print('Error fetching latest place data: $e');
+                if (context.mounted) {
+                  // Fallback to original place data
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(
+                  //     builder: (context) => PlaceDetailPage(place: place),
+                  //   ),
+                  // );
+                }
+              }
+            },
             child: Stack(
               children: [
                 // Background Image
@@ -228,37 +241,53 @@ class WisataAndaCard extends ConsumerWidget {
                               ],
                             ),
                             ElevatedButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 // Enhanced debug untuk tracking tombol kelola
                                 print('=== KELOLA BUTTON DEBUG ===');
                                 print('Kelola button clicked: ${place.name}');
                                 print('Place ID: ${place.id}');
                                 print('=== END KELOLA BUTTON DEBUG ===');
                                 
-                                // Pastikan kita mendapatkan data terbaru dari provider
-                                final latestPlace = ref.read(placesNotifierProvider.notifier).getPlaceById(place.id);
-                                
-                                // if (latestPlace != null) {
-                                //   print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
-                                //   Navigator.push(
-                                //     context,
-                                //     MaterialPageRoute(
-                                //       builder: (context) => PlaceDetailPage(
-                                //         place: latestPlace, // Gunakan data terbaru
-                                //       ),
-                                //     ),
-                                //   );
-                                // } else {
-                                //   print('DEBUG: Latest place not found for Kelola, using original place data');
-                                //   Navigator.push(
-                                //     context,
-                                //     MaterialPageRoute(
-                                //       builder: (context) => PlaceDetailPage(
-                                //         place: place, // Fallback ke data original
-                                //       ),
-                                //     ),
-                                //   );
-                                // }
+                                try {
+                                  // Pastikan kita mendapatkan data terbaru dari provider
+                                  final latestPlace = await ref.read(placesProvider.notifier).getPlaceById(place.id);
+                                  
+                                  if (context.mounted) { // Check if widget is still mounted
+                                    if (latestPlace != null) {
+                                      print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
+                                      // Uncomment and replace with your actual navigation
+                                      // Navigator.push(
+                                      //   context,
+                                      //   MaterialPageRoute(
+                                      //     builder: (context) => PlaceDetailPage(
+                                      //       place: latestPlace, // Gunakan data terbaru
+                                      //     ),
+                                      //   ),
+                                      // );
+                                    } else {
+                                      print('DEBUG: Latest place not found for Kelola, using original place data');
+                                      // Navigator.push(
+                                      //   context,
+                                      //   MaterialPageRoute(
+                                      //     builder: (context) => PlaceDetailPage(
+                                      //       place: place, // Fallback ke data original
+                                      //     ),
+                                      //   ),
+                                      // );
+                                    }
+                                  }
+                                } catch (e) {
+                                  print('Error in Kelola button: $e');
+                                  if (context.mounted) {
+                                    // Show error message or fallback action
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Terjadi kesalahan: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.black.withOpacity(0.7),
