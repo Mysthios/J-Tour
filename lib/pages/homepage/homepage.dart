@@ -62,6 +62,128 @@ class _HomePageState extends ConsumerState<HomePage> {
       ..sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
   }
 
+  List<Place> get mountainPlaces {
+    final placesState = ref.watch(placesProvider);
+    final places = placesState.places;
+    return places.where((place) => 
+      place.category?.toLowerCase().contains('gunung') == true ||
+      place.category?.toLowerCase().contains('pegunungan') == true ||
+      place.name?.toLowerCase().contains('gunung') == true
+    ).toList()
+      ..sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+  }
+
+  List<Place> get waterfallPlaces {
+    final placesState = ref.watch(placesProvider);
+    final places = placesState.places;
+    return places.where((place) => 
+      place.category?.toLowerCase().contains('air terjun') == true ||
+      place.category?.toLowerCase().contains('curug') == true ||
+      place.name?.toLowerCase().contains('air terjun') == true ||
+      place.name?.toLowerCase().contains('curug') == true
+    ).toList()
+      ..sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+  }
+
+  List<Place> get beachPlaces {
+    final placesState = ref.watch(placesProvider);
+    final places = placesState.places;
+    return places.where((place) => 
+      place.category?.toLowerCase().contains('pantai') == true ||
+      place.category?.toLowerCase().contains('beach') == true ||
+      place.name?.toLowerCase().contains('pantai') == true
+    ).toList()
+      ..sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+  }
+
+  Widget _buildCategorySection({
+    required String title,
+    required String category,
+    required List<Place> places,
+    required bool isLoading,
+    required String? error,
+    required double screenHeight,
+    required double titleFontSize,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: titleFontSize,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            TextButton(
+              onPressed: () => _navigateToSearchPage(category),
+              child: const Text("Lihat Semua"),
+            ),
+          ],
+        ),
+        
+        // Loading indicator
+        if (isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (error != null)
+          Center(
+            child: Column(
+              children: [
+                const SizedBox(height: 32),
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: Colors.red,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Gagal memuat $title',
+                  style: const TextStyle(color: Colors.red),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    ref.read(placesProvider.notifier).refreshPlaces();
+                  },
+                  child: const Text('Coba Lagi'),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          )
+        else if (places.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Text(
+                'Belum ada $title',
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: places.length,
+            itemBuilder: (context, index) {
+              return PlaceCard(place: places[index]);
+            },
+          ),
+        
+        SizedBox(height: screenHeight * 0.02),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final placesState = ref.watch(placesProvider);
@@ -79,6 +201,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final popularPlacesList = popularPlaces;
     final recommendedPlacesList = recommendedPlaces;
+    final mountainPlacesList = mountainPlaces;
+    final waterfallPlacesList = waterfallPlaces;
+    final beachPlacesList = beachPlaces;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -169,7 +294,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 ],
               ),
-              
+
               // Loading indicator for popular places
               if (isLoading)
                 Container(
@@ -217,92 +342,58 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 )
               else
-                SizedBox(
-                  height: screenHeight * 0.26,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: popularPlacesList.length > 5 ? 5 : popularPlacesList.length,
-                    itemBuilder: (context, index) {
-                      return PopularPlaceCard(place: popularPlacesList[index]);
-                    },
-                  ),
+                // GUNAKAN AutoCarouselPopularPlaces INSTEAD OF ListView.builder
+                AutoCarouselPopularPlaces(
+                  places: popularPlacesList,
+                  autoScrollDuration: const Duration(seconds: 4), // Opsional: ubah durasi
+                  animationDuration: const Duration(milliseconds: 800), // Opsional: ubah durasi animasi
                 ),
-              
-              SizedBox(height: screenHeight * 0.03),
+
+              SizedBox(height: screenHeight * 0.02),
               
               // Recommended Places Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Rekomendasi Untuk Anda",
-                    style: TextStyle(
-                      fontSize: titleFontSize,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => _navigateToSearchPage("Rekomendasi"),
-                    child: const Text("Lihat Semua"),
-                  ),
-                ],
+              _buildCategorySection(
+                title: "Rekomendasi Untuk Anda",
+                category: "Rekomendasi",
+                places: recommendedPlacesList,
+                isLoading: isLoading,
+                error: error,
+                screenHeight: screenHeight,
+                titleFontSize: titleFontSize,
               ),
               
-              // Loading indicator for recommended places
-              if (isLoading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                )
-              else if (error != null)
-                Center(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 32),
-                      const Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Gagal memuat rekomendasi wisata',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          ref.read(placesProvider.notifier).refreshPlaces();
-                        },
-                        child: const Text('Coba Lagi'),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-                  ),
-                )
-              else if (recommendedPlacesList.isEmpty)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Text(
-                      'Belum ada rekomendasi wisata',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                )
-              else
-                ListView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: recommendedPlacesList.length,
-                  itemBuilder: (context, index) {
-                    return PlaceCard(place: recommendedPlacesList[index]);
-                  },
-                ),
+              // Mountain Places Section
+              _buildCategorySection(
+                title: "Pegunungan",
+                category: "Pegunungan",
+                places: mountainPlacesList,
+                isLoading: isLoading,
+                error: error,
+                screenHeight: screenHeight,
+                titleFontSize: titleFontSize,
+              ),
               
-              SizedBox(height: screenHeight * 0.04),
+              // Waterfall Places Section
+              _buildCategorySection(
+                title: "Air Terjun",
+                category: "Air Terjun",
+                places: waterfallPlacesList,
+                isLoading: isLoading,
+                error: error,
+                screenHeight: screenHeight,
+                titleFontSize: titleFontSize,
+              ),
+              
+              // Beach Places Section
+              _buildCategorySection(
+                title: "Pantai",
+                category: "Pantai",
+                places: beachPlacesList,
+                isLoading: isLoading,
+                error: error,
+                screenHeight: screenHeight,
+                titleFontSize: titleFontSize,
+              ),
             ],
           ),
         ),
