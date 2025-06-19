@@ -21,7 +21,7 @@ class MainPage extends ConsumerWidget {
     if (role == "admin") {
       pages = [
         const AdminHomePage(),
-        const SearchPage(),
+        const ExplorePage(),
         const AccountPage(),
       ];
     } else if (role == "user") {
@@ -29,14 +29,15 @@ class MainPage extends ConsumerWidget {
         HomePage(
           onNavigateToSearch: (category) {
             ref.read(searchCategoryProvider.notifier).state = category;
-            ref.read(bottomNavBarProvider.notifier).updateIndex(1); // ke SearchPage
+            ref
+                .read(bottomNavBarProvider.notifier)
+                .updateIndex(1); // ke SearchPage
           },
         ),
-        const SearchPage(), // Pastikan ini pakai Riverpod
+        const ExplorePage(), // Pastikan ini pakai Riverpod
         const SavedPage(),
         const AccountPage(),
       ];
-
     }
 
     // Safety check jika index out of range saat role berubah
@@ -46,7 +47,7 @@ class MainPage extends ConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(bottomNavBarProvider.notifier).updateIndex(0);
       });
-    }    
+    }
 
     return Scaffold(
       body: IndexedStack(

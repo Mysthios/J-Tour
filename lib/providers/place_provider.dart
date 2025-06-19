@@ -114,111 +114,127 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
   }
 
   // Add new place - IMPROVED ERROR HANDLING
-  Future<bool> addPlace(Place place) async {
-    state = state.copyWith(isLoading: true, error: null);
+ // Fixed addPlace method in PlacesNotifier
+Future<bool> addPlace(Place place) async {
+  state = state.copyWith(isLoading: true, error: null);
 
-    try {
-      print('=== PROVIDER ADD PLACE DEBUG ===');
-      print('Starting to add place: ${place.name}');
-      
-      // Validate required fields
-      if (place.name.trim().isEmpty) {
-        throw Exception('Nama tempat wisata harus diisi');
-      }
-      if (place.location.trim().isEmpty) {
-        throw Exception('Lokasi harus diisi');
-      }
-      if (place.category == null || place.category!.trim().isEmpty) {
-        throw Exception('Kategori harus dipilih');
-      }
-      if (place.latitude == null || place.longitude == null) {
-        throw Exception('Koordinat lokasi harus diisi');
-      }
-      if (place.weekdayPrice == null || place.weekdayPrice! < 0) {
-        throw Exception('Harga hari kerja tidak valid');
-      }
-      if (place.weekendPrice == null || place.weekendPrice! < 0) {
-        throw Exception('Harga akhir pekan tidak valid');
-      }
-      
-      // Prepare main image
-      File? mainImageFile;
-      if (place.isLocalImage && place.image.isNotEmpty) {
-        mainImageFile = File(place.image);
-        print('Main image prepared: ${mainImageFile.path}');
-        
-        // Verify file exists
-        bool exists = await mainImageFile.exists();
-        if (!exists) {
-          throw Exception('File gambar utama tidak ditemukan: ${mainImageFile.path}');
-        }
-      }
-
-      // Prepare additional images
-      List<File> additionalImageFiles = [];
-      if (place.additionalImages != null && place.additionalImages!.isNotEmpty) {
-        print('Processing ${place.additionalImages!.length} additional images');
-        for (String path in place.additionalImages!) {
-          File file = File(path);
-          bool exists = await file.exists();
-          if (exists) {
-            additionalImageFiles.add(file);
-            print('Additional image added: ${file.path}');
-          } else {
-            print('Additional image file not found: $path');
-          }
-        }
-      }
-
-      print('Total images prepared: ${additionalImageFiles.length + (mainImageFile != null ? 1 : 0)}');
-
-      // Create place via API
-      final newPlace = await ApiService.createPlace(
-        name: place.name.trim(),
-        location: place.location.trim(),
-        description: place.description?.trim() ?? '',
-        weekdaysHours: place.weekdaysHours?.trim() ?? '',
-        weekendHours: place.weekendHours?.trim() ?? '',
-        price: place.price ?? 0,
-        weekendPrice: place.weekendPrice ?? 0,
-        weekdayPrice: place.weekdayPrice ?? 0,
-        category: place.category!.trim(),
-        facilities: place.facilities ?? [],
-        latitude: place.latitude!,
-        longitude: place.longitude!,
-        mainImage: mainImageFile,
-        additionalImages: additionalImageFiles.isNotEmpty ? additionalImageFiles : null,
-      );
-
-      print('Place created successfully: ${newPlace.id}');
-
-      // Update local state with new place
-      final updatedPlaces = [...state.places, newPlace];
-      state = state.copyWith(
-        places: updatedPlaces,
-        isLoading: false,
-      );
-
-      return true;
-    } catch (e) {
-      print('Error in addPlace provider: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-      return false;
+  try {
+    print('=== PROVIDER ADD PLACE DEBUG ===');
+    print('Starting to add place: ${place.name}');
+    
+    // Validate required fields
+    if (place.name.trim().isEmpty) {
+      throw Exception('Nama tempat wisata harus diisi');
     }
+    if (place.location.trim().isEmpty) {
+      throw Exception('Lokasi harus diisi');
+    }
+    if (place.category == null || place.category!.trim().isEmpty) {
+      throw Exception('Kategori harus dipilih');
+    }
+    if (place.latitude == null || place.longitude == null) {
+      throw Exception('Koordinat lokasi harus diisi');
+    }
+    
+    // PERBAIKAN: Prepare main image dengan validasi yang lebih ketat
+    File? mainImageFile;
+    if (place.isLocalImage && place.image.isNotEmpty) {
+      mainImageFile = File(place.image);
+      print('Preparing main image: ${mainImageFile.path}');
+      
+      // Verify file exists dan readable
+      bool exists = await mainImageFile.exists();
+      if (!exists) {
+        throw Exception('File gambar utama tidak ditemukan: ${mainImageFile.path}');
+      }
+      
+      // Check file size (optional)
+      int fileSize = await mainImageFile.length();
+      print('Main image file size: $fileSize bytes');
+      
+      if (fileSize == 0) {
+        throw Exception('File gambar utama kosong atau corrupt');
+      }
+    } else {
+      print('No main image provided');
+      // Uncomment baris di bawah jika gambar utama wajib
+      // throw Exception('Gambar utama harus dipilih');
+    }
+
+    // PERBAIKAN: Prepare additional images dengan validasi
+    List<File> additionalImageFiles = [];
+    if (place.additionalImages != null && place.additionalImages!.isNotEmpty) {
+      print('Processing ${place.additionalImages!.length} additional images');
+      
+      for (int i = 0; i < place.additionalImages!.length; i++) {
+        String path = place.additionalImages![i];
+        File file = File(path);
+        
+        bool exists = await file.exists();
+        if (exists) {
+          int fileSize = await file.length();
+          if (fileSize > 0) {
+            additionalImageFiles.add(file);
+            print('Additional image $i prepared: ${file.path} (${fileSize} bytes)');
+          } else {
+            print('Additional image $i is empty: $path');
+          }
+        } else {
+          print('Additional image $i not found: $path');
+        }
+      }
+    }
+
+    print('Final image count - Main: ${mainImageFile != null ? 1 : 0}, Additional: ${additionalImageFiles.length}');
+
+    // PERBAIKAN: Call API dengan parameter yang benar
+    final newPlace = await ApiService.createPlace(
+      name: place.name.trim(),
+      location: place.location.trim(),
+      description: place.description?.trim() ?? '',
+      weekdaysHours: place.weekdaysHours?.trim() ?? '',
+      weekendHours: place.weekendHours?.trim() ?? '',
+      price: place.price ?? 0,
+      weekendPrice: place.weekendPrice ?? 0,
+      weekdayPrice: place.weekdayPrice ?? 0,
+      category: place.category!.trim(),
+      facilities: place.facilities ?? [],
+      latitude: place.latitude!,
+      longitude: place.longitude!,
+      mainImage: mainImageFile, // Pastikan parameter name sesuai
+      additionalImages: additionalImageFiles.isNotEmpty ? additionalImageFiles : null,
+    );
+
+    print('Place created successfully: ${newPlace.id}');
+
+    // Update local state with new place
+    final updatedPlaces = [...state.places, newPlace];
+    state = state.copyWith(
+      places: updatedPlaces,
+      isLoading: false,
+    );
+
+    return true;
+  } catch (e) {
+    print('Error in addPlace provider: $e');
+    state = state.copyWith(
+      isLoading: false,
+      error: e.toString(),
+    );
+    return false;
   }
+}
 
-  // Update existing place - IMPROVED ERROR HANDLING
-  Future<bool> updatePlace(String id, Place updatedPlace) async {
+  // Update existing place - IMPROVED ERROR HANDLING AND FIELD MANAGEMENT
+// Update existing place - IMPROVED ERROR HANDLING AND FIELD MANAGEMENT
+Future<bool> updatePlace(String id, Place updatedPlace, {bool updateMainImage = false}) async {
     state = state.copyWith(isLoading: true, error: null);
-
     try {
       print('=== PROVIDER UPDATE PLACE DEBUG ===');
       print('Updating place ID: $id');
-      
-      // Validate required fields
+      print('Update main image flag: $updateMainImage');
+      print('Additional images count: ${updatedPlace.additionalImages?.length ?? 0}');
+
       if (updatedPlace.name.trim().isEmpty) {
         throw Exception('Nama tempat wisata harus diisi');
       }
@@ -238,37 +254,40 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
         throw Exception('Harga akhir pekan tidak valid');
       }
 
-      // Prepare new images (if any)
+      File? mainImageFile;
+      if (updateMainImage && updatedPlace.isLocalImage && updatedPlace.image != null && updatedPlace.image!.isNotEmpty) {
+        File file = File(updatedPlace.image!);
+        bool exists = await file.exists();
+        if (exists) {
+          mainImageFile = file;
+          print('Main image updated: ${mainImageFile.path}');
+        } else {
+          print('Main image file not found: ${updatedPlace.image}');
+        }
+      }
+
       List<File> newImageFiles = [];
+      List<String> existingImageUrls = [];
       if (updatedPlace.additionalImages != null && updatedPlace.additionalImages!.isNotEmpty) {
         for (String path in updatedPlace.additionalImages!) {
-          // Check if this is a local file path (not a URL)
-          if (!path.startsWith('http') && !path.startsWith('https')) {
+          if (path.startsWith('http')) {
+            existingImageUrls.add(path);
+            print('Existing additional image to keep: $path');
+          } else {
             File file = File(path);
             bool exists = await file.exists();
             if (exists) {
               newImageFiles.add(file);
-              print('New image added: ${file.path}');
-            } else {
-              print('New image file not found: $path');
+              print('New additional image: ${file.path}');
             }
           }
         }
       }
 
-      // Prepare existing images (URLs to keep)
-      List<String> existingImageUrls = [];
-      if (updatedPlace.additionalImages != null && updatedPlace.additionalImages!.isNotEmpty) {
-        for (String path in updatedPlace.additionalImages!) {
-          // Keep existing URLs
-          if (path.startsWith('http') || path.startsWith('https')) {
-            existingImageUrls.add(path);
-            print('Existing image to keep: $path');
-          }
-        }
-      }
+      print('Main image file: ${mainImageFile?.path ?? 'null'}');
+      print('New additional images count: ${newImageFiles.length}');
+      print('Existing additional images count: ${existingImageUrls.length}');
 
-      // Update place via API
       final updated = await ApiService.updatePlace(
         id: id,
         name: updatedPlace.name.trim(),
@@ -283,13 +302,13 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
         facilities: updatedPlace.facilities ?? [],
         latitude: updatedPlace.latitude!,
         longitude: updatedPlace.longitude!,
+        image: mainImageFile,
         newImages: newImageFiles.isNotEmpty ? newImageFiles : null,
-        existingImages: existingImageUrls.isNotEmpty ? existingImageUrls : null,
+        existingImages: existingImageUrls.isNotEmpty ? existingImageUrls : [],
       );
 
       print('Place updated successfully: ${updated.id}');
 
-      // Update local state
       final updatedPlaces = state.places.map((place) {
         return place.id == id ? updated : place;
       }).toList();
@@ -302,10 +321,40 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
       return true;
     } catch (e) {
       print('Error in updatePlace provider: $e');
+      String errorMessage = e.toString();
+      if (errorMessage.contains('Bad request')) {
+        errorMessage = 'Data tidak valid. Periksa semua field yang diperlukan.';
+      } else if (errorMessage.contains('Network connection')) {
+        errorMessage = 'Koneksi internet bermasalah. Coba lagi nanti.';
+      } else if (errorMessage.contains('Validation error')) {
+        errorMessage = 'Data tidak sesuai format yang diharapkan.';
+      } else if (errorMessage.contains('Place not found')) {
+        errorMessage = 'Tempat wisata tidak ditemukan.';
+      } else if (errorMessage.contains('Server error')) {
+        errorMessage = 'Terjadi kesalahan server. Coba lagi nanti.';
+      }
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: errorMessage,
       );
+      return false;
+    }
+  }
+
+  Future<bool> updateAdditionalImages(String id, List<String> additionalImages) async {
+    try {
+      final currentPlace = getPlaceByIdSync(id);
+      if (currentPlace == null) {
+        throw Exception('Place not found');
+      }
+
+      final updatedPlace = currentPlace.copyWith(
+        additionalImages: additionalImages,
+      );
+
+      return await updatePlace(id, updatedPlace, updateMainImage: false);
+    } catch (e) {
+      print('Error updating additional images: $e');
       return false;
     }
   }

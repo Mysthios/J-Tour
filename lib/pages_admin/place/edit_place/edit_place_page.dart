@@ -6,8 +6,12 @@ import 'package:j_tour/models/place_model.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:j_tour/pages_admin/place/edit_place/widgets/2.1_image_pciker_widgets.dart';
-
-
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.2_basic_info_widget.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.3_district_dropdown_widget.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.4_location_picker_widget.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.5_operating_hours_widget.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.6_pricing_widget.dart';
+import 'package:j_tour/pages_admin/place/edit_place/widgets/2.7_facilities_widget.dart';
 
 class EditPlacePage extends ConsumerStatefulWidget {
   final Place place;
@@ -28,9 +32,14 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
   late TextEditingController _weekendPriceController;
 
   File? _selectedImage;
+  String? _existingImageUrl;
   List<String> _facilities = [];
   List<String> _additionalImages = [];
   final _formKey = GlobalKey<FormState>();
+
+  bool _mainImageChanged = false;
+  String? _originalImagePath;
+  bool _originalIsLocalImage = false;
 
   LatLng? _selectedLocation;
   String? _selectedCategory;
@@ -40,7 +49,6 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
   void initState() {
     super.initState();
     _initializeControllers();
-    _initializeData();
   }
 
   void _initializeControllers() {
@@ -59,20 +67,61 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     _weekendHoursController =
         TextEditingController(text: widget.place.weekendHours);
     _priceController = TextEditingController(
-      text: currencyFormatter.format(widget.place.price),
+      text: currencyFormatter.format(widget.place.price ?? 0),
     );
     _weekendPriceController = TextEditingController(
-      text: currencyFormatter.format(widget.place.weekendPrice),
+      text: currencyFormatter.format(widget.place.weekendPrice ?? 0),
     );
 
     _selectedCategory = widget.place.category;
-    _selectedLocation = LatLng(widget.place.latitude, widget.place.longitude);
-    _facilities = List.from(widget.place.facilities);
-    _additionalImages = List.from(widget.place.additionalImages);
+    if (widget.place.latitude != null && widget.place.longitude != null) {
+      _selectedLocation =
+          LatLng(widget.place.latitude!, widget.place.longitude!);
+    }
+    _facilities = List.from(widget.place.facilities ?? []);
+    _additionalImages = List.from(widget.place.additionalImages ?? []);
 
-    // Jika gambar utama adalah lokal, set sebagai File
-    if (widget.place.isLocalImage && widget.place.image.isNotEmpty) {
-      _selectedImage = File(widget.place.image);
+    _originalImagePath = widget.place.image;
+    _originalIsLocalImage = widget.place.isLocalImage;
+
+    if (widget.place.isLocalImage && (widget.place.image?.isNotEmpty ?? false)) {
+      _selectedImage = File(widget.place.image!);
+      _existingImageUrl = null;
+    } else if (widget.place.image?.isNotEmpty ?? false) {
+      _existingImageUrl = widget.place.image;
+      _selectedImage = null;
+    }
+
+    _mainImageChanged = false;
+
+    List<String> missingFields = [];
+    if (widget.place.name?.isEmpty ?? true) missingFields.add('Nama');
+    if (widget.place.location?.isEmpty ?? true) missingFields.add('Lokasi');
+    if (widget.place.description?.isEmpty ?? true)
+      missingFields.add('Deskripsi');
+    if (widget.place.weekdaysHours?.isEmpty ?? true)
+      missingFields.add('Jam Operasional Weekdays');
+    if (widget.place.weekendHours?.isEmpty ?? true)
+      missingFields.add('Jam Operasional Weekend');
+    if (widget.place.price == null || widget.place.price == 0)
+      missingFields.add('Harga Weekdays');
+    if (widget.place.weekendPrice == null || widget.place.weekendPrice == 0)
+      missingFields.add('Harga Weekend');
+    if (widget.place.category?.isEmpty ?? true) missingFields.add('Kategori');
+    if (widget.place.facilities?.isEmpty ?? true)
+      missingFields.add('Fasilitas');
+    if (widget.place.latitude == null) missingFields.add('Latitude');
+    if (widget.place.longitude == null) missingFields.add('Longitude');
+
+    if (missingFields.isNotEmpty) {
+      Future.microtask(() {
+        _showErrorSnackBar(
+            'Field berikut belum diisi: ${missingFields.join(', ')}');
+      });
+    } else {
+      Future.microtask(() {
+        _showSuccessSnackBar('Semua field sudah terisi dengan lengkap.');
+      });
     }
   }
 
@@ -111,16 +160,36 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     });
 
     try {
-      // Pisahkan gambar tambahan: URL (lama) dan File (baru)
-      List<String> existingImageUrls = [];
-      List<String> newImagePaths = [];
+      print('=== EDIT PLACE PAGE DEBUG ===');
+      print('Original place image: $_originalImagePath');
+      print('Original isLocalImage: $_originalIsLocalImage');
+      print('Selected new image: ${_selectedImage?.path}');
+      print('Existing image URL: $_existingImageUrl');
+      print('Main image changed flag: $_mainImageChanged');
+      print('Additional images count: ${_additionalImages.length}');
 
-      for (String path in _additionalImages) {
-        if (path.startsWith('http') || path.startsWith('https')) {
-          existingImageUrls.add(path);
+      String? finalImagePath;
+      bool isLocalImage = false;
+      bool shouldUpdateMainImage = _mainImageChanged;
+
+      if (_mainImageChanged) {
+        if (_selectedImage != null && await _selectedImage!.exists()) {
+          finalImagePath = _selectedImage!.path;
+          isLocalImage = true;
+          print('Using new local main image: $finalImagePath');
+        } else if (_existingImageUrl != null && _existingImageUrl!.isNotEmpty) {
+          finalImagePath = _existingImageUrl;
+          isLocalImage = false;
+          print('Using existing URL main image: $finalImagePath');
         } else {
-          newImagePaths.add(path);
+          finalImagePath = null;
+          isLocalImage = false;
+          print('Main image cleared');
         }
+      } else {
+        finalImagePath = _originalImagePath;
+        isLocalImage = _originalIsLocalImage;
+        print('Keeping original main image: $finalImagePath');
       }
 
       final place = Place(
@@ -134,24 +203,26 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
         weekendPrice: _parsePriceFromController(_weekendPriceController.text),
         weekdayPrice: _parsePriceFromController(_priceController.text),
         category: _selectedCategory!,
-        facilities: _facilities,
+        facilities: List.from(_facilities),
         latitude: _selectedLocation!.latitude,
         longitude: _selectedLocation!.longitude,
-        image: _selectedImage?.path ?? widget.place.image,
-        isLocalImage: _selectedImage != null,
-        additionalImages: _additionalImages,
+        image: finalImagePath ?? '',
+        isLocalImage: isLocalImage,
+        additionalImages: List.from(_additionalImages),
         rating: widget.place.rating,
       );
 
-      print('=== EDIT PLACE PAGE DEBUG ===');
-      print('Place data: ${place.toJson()}');
-      print('Main image: ${_selectedImage?.path ?? widget.place.image}');
-      print('Existing images (URLs): $existingImageUrls');
-      print('New images (paths): $newImagePaths');
+      print('Final place data:');
+      print('- ID: ${place.id}');
+      print('- Name: ${place.name}');
+      print('- Main Image: ${place.image}');
+      print('- IsLocalImage: ${place.isLocalImage}');
+      print('- Should update main image: $shouldUpdateMainImage');
+      print('- Additional images: ${place.additionalImages?.length ?? 0}');
 
       final success = await ref
           .read(placesProvider.notifier)
-          .updatePlace(widget.place.id, place);
+          .updatePlace(widget.place.id, place, updateMainImage: shouldUpdateMainImage);
 
       if (success) {
         _showSuccessSnackBar('Wisata berhasil diperbarui!');
@@ -176,16 +247,28 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     }
   }
 
+  void _onMainImageChanged(File? newImage) {
+    setState(() {
+      _mainImageChanged = true;
+      if (newImage != null && newImage.existsSync()) {
+        _selectedImage = newImage;
+        _existingImageUrl = null;
+        print('New main image selected: ${newImage.path}');
+      } else {
+        _selectedImage = null;
+        _existingImageUrl = null;
+        print('Main image cleared');
+      }
+    });
+  }
+
   void _handleError(dynamic error) {
     String errorMessage;
-
     if (error.toString().contains('Network') ||
-        error.toString().contains('network') ||
         error.toString().contains('connection')) {
       errorMessage =
           'Gagal terhubung ke server. Periksa koneksi internet Anda.';
-    } else if (error.toString().contains('TimeoutException') ||
-        error.toString().contains('timeout')) {
+    } else if (error.toString().contains('TimeoutException')) {
       errorMessage = 'Koneksi timeout. Silakan coba lagi.';
     } else if (error.toString().contains('FormatException')) {
       errorMessage = 'Format data tidak valid. Periksa input Anda.';
@@ -199,7 +282,6 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
     } else {
       errorMessage = 'Terjadi kesalahan: ${error.toString()}';
     }
-
     _showErrorSnackBar(errorMessage);
   }
 
@@ -260,16 +342,14 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
                 children: [
                   ImagePickerWidgets(
                     selectedImage: _selectedImage,
+                    existingImageUrl: _existingImageUrl,
                     additionalImages: _additionalImages,
-                    onMainImageChanged: (image) {
-                      setState(() {
-                        _selectedImage = image;
-                      });
-                    },
+                    onMainImageChanged: _onMainImageChanged,
                     onAdditionalImagesChanged: (images) {
                       setState(() {
-                        _additionalImages = images;
+                        _additionalImages = List.from(images);
                       });
+                      print('Additional images updated: ${images.length} images');
                     },
                   ),
                   const SizedBox(height: 24),
@@ -313,8 +393,9 @@ class _EditPlacePageState extends ConsumerState<EditPlacePage> {
                     facilities: _facilities,
                     onFacilitiesChanged: (facilities) {
                       setState(() {
-                        _facilities = facilities;
+                        _facilities = List.from(facilities);
                       });
+                      print('Facilities updated: ${facilities.length} facilities');
                     },
                   ),
                   const SizedBox(height: 32),

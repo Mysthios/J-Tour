@@ -6,7 +6,7 @@ import 'package:j_tour/models/place_model.dart';
 import 'package:mime/mime.dart'; // Add this dependency: dart pub add mime
 
 class ApiService {
-  static const String baseUrl = 'http://10.132.0.84:3000/api';
+  static const String baseUrl = 'http://192.168.0.6:3000/api';
   
   // Headers default
   static Map<String, String> get _headers => {
@@ -85,153 +85,125 @@ class ApiService {
     }
   }
 
-  // POST create new place - FIXED VERSION WITH MIME TYPE
-  static Future<Place> createPlace({
-    required String name,
-    required String location,
-    required String description,
-    required String weekdaysHours,
-    required String weekendHours,
-    required int price,
-    required int weekendPrice,
-    required int weekdayPrice,
-    required String category,
-    required List<String> facilities,
-    required double latitude,
-    required double longitude,
-    File? mainImage,
-    List<File>? additionalImages,
-  }) async {
-    try {
-      print('=== API CREATE PLACE DEBUG ===');
-      print('URL: $baseUrl/places');
-      print('Name: $name');
-      print('Location: $location');
-      print('Category: $category');
-      print('Description: $description');
-      print('Coordinates: $latitude, $longitude');
-      print('Hours: $weekdaysHours | $weekendHours');
-      print('Prices: $weekdayPrice | $weekendPrice');
-      print('Facilities: $facilities');
-      print('Main image: ${mainImage?.path}');
-      print('Additional images: ${additionalImages?.length ?? 0}');
+ // POST create new place - FIXED VERSION
+static Future<Place> createPlace({
+  required String name,
+  required String location,
+  required String description,
+  required String weekdaysHours,
+  required String weekendHours,
+  required int price,
+  required int weekendPrice,
+  required int weekdayPrice,
+  required String category,
+  required List<String> facilities,
+  required double latitude,
+  required double longitude,
+  File? mainImage,
+  List<File>? additionalImages,
+}) async {
+  try {
+    print('=== API CREATE PLACE DEBUG ===');
+    print('URL: $baseUrl/places');
+    print('Name: $name');
+    print('Main image: ${mainImage?.path}');
+    print('Additional images: ${additionalImages?.length ?? 0}');
 
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/places'),
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/places'),
+    );
+
+    // Add text fields
+    request.fields.addAll({
+      'name': name.trim(),
+      'location': location.trim(),
+      'description': description.trim(),
+      'weekdaysHours': weekdaysHours.trim(),
+      'weekendHours': weekendHours.trim(),
+      'price': price.toString(),
+      'weekendPrice': weekendPrice.toString(),
+      'weekdayPrice': weekdayPrice.toString(),
+      'category': category.trim(),
+      'facilities': json.encode(facilities),
+      'latitude': latitude.toString(),
+      'longitude': longitude.toString(),
+    });
+
+    print('Request fields: ${request.fields}');
+
+    // Tambahkan semua gambar dengan field 'images'
+    final allImages = <File>[];
+if (mainImage != null && await mainImage.exists()) {
+  if (!_isValidImageFile(mainImage)) {
+    throw Exception('File utama bukan file gambar yang valid: ${mainImage.path}');
+  }
+  final mimeType = _getMimeType(mainImage.path);
+  request.files.add(
+    await http.MultipartFile.fromPath(
+      'mainImage',
+      mainImage.path,
+      contentType: mimeType != null ? http_parser.MediaType.parse(mimeType) : null,
+    ),
+  );
+  print('Adding main image: ${mainImage.path}');
+}
+
+if (additionalImages != null && additionalImages.isNotEmpty) {
+  for (var image in additionalImages) {
+    if (await image.exists() && _isValidImageFile(image)) {
+      final mimeType = _getMimeType(image.path);
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'additionalImages',
+          image.path,
+          contentType: mimeType != null ? http_parser.MediaType.parse(mimeType) : null,
+        ),
       );
-
-      // Add text fields - pastikan semua field tidak null
-      request.fields.addAll({
-        'name': name.trim(),
-        'location': location.trim(),
-        'description': description.trim(),
-        'weekdaysHours': weekdaysHours.trim(),
-        'weekendHours': weekendHours.trim(),
-        'price': price.toString(),
-        'weekendPrice': weekendPrice.toString(),
-        'weekdayPrice': weekdayPrice.toString(),
-        'category': category.trim(),
-        'facilities': json.encode(facilities),
-        'latitude': latitude.toString(),
-        'longitude': longitude.toString(),
-      });
-
-      print('Request fields: ${request.fields}');
-
-      // Validate and add main image if exists
-      if (mainImage != null && await mainImage.exists()) {
-        if (!_isValidImageFile(mainImage)) {
-          throw Exception('File utama bukan file gambar yang valid: ${mainImage.path}');
-        }
-        
-        final mimeType = _getMimeType(mainImage.path);
-        print('Main image MIME type: $mimeType');
-        print('Adding main image: ${mainImage.path}');
-        
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'images',
-            mainImage.path,
-            contentType: mimeType != null ? 
-              http_parser.MediaType.parse(mimeType) : null,
-          ),
-        );
-      }
-
-      // Validate and add additional images if exist
-      if (additionalImages != null && additionalImages.isNotEmpty) {
-        print('Processing ${additionalImages.length} additional images');
-        for (int i = 0; i < additionalImages.length; i++) {
-          File image = additionalImages[i];
-          
-          if (await image.exists()) {
-            if (!_isValidImageFile(image)) {
-              print('Skipping invalid image file: ${image.path}');
-              continue;
-            }
-            
-            final mimeType = _getMimeType(image.path);
-            print('Additional image $i MIME type: $mimeType');
-            print('Adding additional image $i: ${image.path}');
-            
-            request.files.add(
-              await http.MultipartFile.fromPath(
-                'images',
-                image.path,
-                contentType: mimeType != null ? 
-                  http_parser.MediaType.parse(mimeType) : null,
-              ),
-            );
-          } else {
-            print('Image file not found: ${image.path}');
-          }
-        }
-      }
-
-      print('Total files to upload: ${request.files.length}');
-
-      // Add debug headers
-      print('Request headers: ${request.headers}');
-      print('Request files detail:');
-      for (var file in request.files) {
-        print('- Field: ${file.field}');
-        print('- Filename: ${file.filename}');
-        print('- Content-Type: ${file.contentType}');
-        print('- Length: ${file.length}');
-      }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      print('Response status: ${response.statusCode}');
-      print('Response headers: ${response.headers}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 201) {
-        final responseData = json.decode(response.body);
-        if (responseData['success'] == true) {
-          return Place.fromJson(responseData['data']);
-        } else {
-          throw Exception('Server returned success=false: ${responseData['message']}');
-        }
-      } else {
-        // Handle different error responses
-        try {
-          final errorData = json.decode(response.body);
-          throw Exception('Failed to create place: ${errorData['message'] ?? errorData['error'] ?? 'Unknown error'}');
-        } catch (e) {
-          throw Exception('Failed to create place: HTTP ${response.statusCode} - ${response.body}');
-        }
-      }
-    } catch (e) {
-      print('Error in createPlace: $e');
-      rethrow;
+      print('Adding additional image: ${image.path}');
     }
   }
+}
+    for (var image in allImages) {
+      final mimeType = _getMimeType(image.path);
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'images', // Field name sesuai backend
+          image.path,
+          contentType: mimeType != null ? http_parser.MediaType.parse(mimeType) : null,
+        ),
+      );
+    }
 
-  // PUT update place - FIXED VERSION WITH MIME TYPE
-  static Future<Place> updatePlace({
+    print('Total files to upload: ${request.files.length}');
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
+    if (response.statusCode == 201) {
+      final responseData = json.decode(response.body);
+      if (responseData['success'] == true) {
+        final place = Place.fromJson(responseData['data']);
+        print('Place created: ID=${place.id}, Images=${place.image}, AdditionalImages=${place.additionalImages?.length}');
+        return place;
+      } else {
+        throw Exception('Server returned success=false: ${responseData['message']}');
+      }
+    } else {
+      final errorData = json.decode(response.body);
+      throw Exception('Failed to create place: ${errorData['message'] ?? errorData['error'] ?? 'Unknown error'}');
+    }
+  } catch (e) {
+    print('Error in createPlace: $e');
+    rethrow;
+  }
+}
+
+// PUT update place - IMPROVED VERSION
+static Future<Place> updatePlace({
     required String id,
     required String name,
     required String location,
@@ -245,20 +217,24 @@ class ApiService {
     required List<String> facilities,
     required double latitude,
     required double longitude,
+    File? image,
     List<File>? newImages,
     List<String>? existingImages,
   }) async {
     try {
       print('=== API UPDATE PLACE DEBUG ===');
       print('Updating place ID: $id');
-      
+      print('URL: $baseUrl/places/$id');
+      print('Main image provided: ${image != null}');
+      print('New additional images count: ${newImages?.length ?? 0}');
+      print('Existing additional images count: ${existingImages?.length ?? 0}');
+
       var request = http.MultipartRequest(
         'PUT',
         Uri.parse('$baseUrl/places/$id'),
       );
 
-      // Add text fields
-      request.fields.addAll({
+      final Map<String, String> fields = {
         'name': name.trim(),
         'location': location.trim(),
         'description': description.trim(),
@@ -268,41 +244,65 @@ class ApiService {
         'weekendPrice': weekendPrice.toString(),
         'weekdayPrice': weekdayPrice.toString(),
         'category': category.trim(),
-        'facilities': json.encode(facilities),
         'latitude': latitude.toString(),
         'longitude': longitude.toString(),
-      });
+      };
 
-      // Add existing images if provided
-      if (existingImages != null && existingImages.isNotEmpty) {
-        request.fields['existingImages'] = json.encode(existingImages);
+      if (facilities.isNotEmpty) {
+        fields['facilities'] = json.encode(facilities);
       }
 
-      // Validate and add new images if exist
+      if (existingImages != null) {
+        fields['existingImages'] = json.encode(existingImages);
+        print('Existing additional images sent: ${existingImages.length}');
+      } else {
+        fields['existingImages'] = json.encode([]);
+        print('No existing additional images to keep');
+      }
+
+      request.fields.addAll(fields);
+      print('Request fields: ${request.fields}');
+
+      if (image != null && await image.exists()) {
+        if (!_isValidImageFile(image)) {
+          throw Exception('File utama bukan file gambar yang valid: ${image.path}');
+        }
+        final mimeType = _getMimeType(image.path);
+        print('Main image MIME type: $mimeType');
+        print('Adding main image: ${image.path}');
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'mainImage',
+            image.path,
+            contentType: mimeType != null ? http_parser.MediaType.parse(mimeType) : null,
+          ),
+        );
+      }
+
       if (newImages != null && newImages.isNotEmpty) {
+        print('Processing ${newImages.length} new additional images');
         for (int i = 0; i < newImages.length; i++) {
-          File image = newImages[i];
-          
-          if (await image.exists()) {
-            if (!_isValidImageFile(image)) {
-              print('Skipping invalid image file: ${image.path}');
+          File imageFile = newImages[i];
+          if (await imageFile.exists()) {
+            if (!_isValidImageFile(imageFile)) {
+              print('Skipping invalid image file: ${imageFile.path}');
               continue;
             }
-            
-            final mimeType = _getMimeType(image.path);
-            print('New image $i MIME type: $mimeType');
-            
+            final mimeType = _getMimeType(imageFile.path);
+            print('New additional image $i MIME type: $mimeType');
+            print('Adding new additional image $i: ${imageFile.path}');
             request.files.add(
               await http.MultipartFile.fromPath(
-                'images',
-                image.path,
-                contentType: mimeType != null ? 
-                  http_parser.MediaType.parse(mimeType) : null,
+                'additionalImages',
+                imageFile.path,
+                contentType: mimeType != null ? http_parser.MediaType.parse(mimeType) : null,
               ),
             );
           }
         }
       }
+
+      print('Total files to upload: ${request.files.length}');
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
@@ -313,23 +313,34 @@ class ApiService {
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         if (responseData['success'] == true) {
+          print('Place updated successfully');
           return Place.fromJson(responseData['data']);
         } else {
-          throw Exception('Server returned success=false: ${responseData['message']}');
+          throw Exception('Server error: ${responseData['message']}');
         }
       } else {
+        String errorMessage;
         try {
           final errorData = json.decode(response.body);
-          throw Exception('Failed to update place: ${errorData['message'] ?? errorData['error'] ?? 'Unknown error'}');
-        } catch (e) {
-          throw Exception('Failed to update place: HTTP ${response.statusCode} - ${response.body}');
+          errorMessage = errorData['message'] ?? errorData['error'] ?? 'Unknown error';
+        } catch (_) {
+          errorMessage = 'HTTP ${response.statusCode} - ${response.body}';
         }
+        throw Exception('Failed to update place: $errorMessage');
       }
     } catch (e) {
       print('Error in updatePlace: $e');
+      if (e.toString().contains('SocketException') || e.toString().contains('NetworkException')) {
+        throw Exception('Network connection error. Please check your internet connection.');
+      } else if (e.toString().contains('TimeoutException')) {
+        throw Exception('Request timeout. Please try again.');
+      } else if (e.toString().contains('FormatException')) {
+        throw Exception('Invalid data format. Please check your input.');
+      }
       rethrow;
     }
   }
+
 
   // DELETE place
   static Future<void> deletePlace(String id) async {
