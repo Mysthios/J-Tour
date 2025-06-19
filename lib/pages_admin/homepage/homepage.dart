@@ -3,22 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:j_tour/models/place_model.dart';
+import 'package:j_tour/pages/homepage/widgets/bottom_navbar.dart';
 import 'package:j_tour/pages_admin/place/add_place/add_place_page.dart';
 import 'package:j_tour/pages_admin/place/edit_place/edit_place_page.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:j_tour/pages_admin/homepage/widgets/wisata_anda_card.dart';
 import 'package:j_tour/pages_admin/homepage/widgets/weather_header.dart';
-
+import 'package:j_tour/providers/bottom_navbar_provider.dart';
 class AdminHomePage extends ConsumerStatefulWidget {
   const AdminHomePage({super.key});
 
   @override
-  ConsumerState<AdminHomePage> createState() => _HomePageState();
+  ConsumerState<AdminHomePage> createState() => _AdminHomePageState();
 }
 
 const Color kPrimaryBlue = Color(0xFF0072BC);
 
-class _HomePageState extends ConsumerState<AdminHomePage> {
+class _AdminHomePageState extends ConsumerState<AdminHomePage> {
   // Search and filter variables
   String searchQuery = "";
   String? selectedCategory;
@@ -42,7 +43,6 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
   ];
 
   List<Place> get filteredAndSortedPlaces {
-    // FIX 1: Use the correct provider name
     final placesState = ref.watch(placesProvider);
     final List<Place> places = placesState.places;
     List<Place> filtered = List.from(places);
@@ -91,7 +91,6 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
           comparison = (a.rating ?? 0).compareTo(b.rating ?? 0);
           break;
         case "price":
-          // FIX 2: Handle null values properly
           comparison = (a.price ?? 0).compareTo(b.price ?? 0);
           break;
       }
@@ -101,13 +100,17 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
     return filtered;
   }
 
+  void _onNavBarTap(int index) {
+    ref.read(bottomNavBarProvider.notifier).updateIndex(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     final places = filteredAndSortedPlaces;
-    // FIX 3: Watch loading and error states properly
     final placesState = ref.watch(placesProvider);
     final isLoading = placesState.isLoading;
     final error = placesState.error;
+    final currentIndex = ref.watch(bottomNavBarProvider);
     
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -337,7 +340,6 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
                 children: [
                   SizedBox(height: screenHeight * 0.01),
                   
-                  // FIX 4: Add loading and error handling
                   if (isLoading)
                     const Center(
                       child: Padding(
@@ -436,6 +438,11 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
         backgroundColor: kPrimaryBlue,
         child: const Icon(Icons.add, color: Colors.white),
       ),
+      // bottomNavigationBar: CustomBottomNavBar(
+      //   currentIndex: currentIndex,
+      //   onTap: _onNavBarTap,
+      //   role: 'admin',
+      // ),
     );
   }
 
@@ -625,7 +632,6 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
           TextButton(
             child: const Text('Hapus', style: TextStyle(color: Colors.red)),
             onPressed: () async {
-              // FIX 5: Handle async delete operation properly
               final success = await ref.read(placesProvider.notifier).deletePlace(place.id);
               Navigator.pop(context);
               
@@ -664,11 +670,10 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
   }
 
   Future<void> _showAddPlaceDialog(BuildContext context) async {
-    // FIX 6: Remove unnecessary Place creation and navigate properly
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const CreatePlacePage(), // Add const
+        builder: (context) => const CreatePlacePage(),
       ),
     );
 
@@ -678,20 +683,4 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
       );
     }
   }
-
-  // // FIX 7: Uncomment and fix edit method if needed
-  // Future<void> _showEditPlaceDialog(BuildContext context, Place place) async {
-  //   final result = await Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => EditPlacePage(place: place),
-  //     ),
-  //   );
-
-  //   if (result == true) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Tempat wisata berhasil diperbarui')),
-  //     );
-  //   }
-  // }
 }

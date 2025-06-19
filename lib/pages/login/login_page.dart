@@ -345,36 +345,36 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 16),
 
                             // Info untuk testing
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue[200]!),
-                              ),
-                              child: const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Demo Login:",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blue,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    "Email: user@example.com",
-                                    style: TextStyle(fontSize: 11, color: Colors.blue),
-                                  ),
-                                  Text(
-                                    "Password: password123",
-                                    style: TextStyle(fontSize: 11, color: Colors.blue),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            // Container(
+                            //   padding: const EdgeInsets.all(12),
+                            //   decoration: BoxDecoration(
+                            //     color: Colors.blue[50],
+                            //     borderRadius: BorderRadius.circular(8),
+                            //     border: Border.all(color: Colors.blue[200]!),
+                            //   ),
+                            //   child: const Column(
+                            //     crossAxisAlignment: CrossAxisAlignment.start,
+                            //     children: [
+                            //       Text(
+                            //         "Demo Login:",
+                            //         style: TextStyle(
+                            //           fontWeight: FontWeight.w600,
+                            //           color: Colors.blue,
+                            //           fontSize: 12,
+                            //         ),
+                            //       ),
+                            //       SizedBox(height: 4),
+                            //       Text(
+                            //         "Email: user@example.com",
+                            //         style: TextStyle(fontSize: 11, color: Colors.blue),
+                            //       ),
+                            //       Text(
+                            //         "Password: password123",
+                            //         style: TextStyle(fontSize: 11, color: Colors.blue),
+                            //       ),
+                            //     ],
+                            //   ),
+                            // ),
                             SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? 100 : 20),
                           ],
                         ),
