@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:j_tour/main_page.dart';
-import 'package:j_tour/pages/onBoarding/onboarding_page.dart'; // Import LandingPage
+import 'package:j_tour/pages/splash/splash_screen.dart';
 import 'package:j_tour/pages_admin/homepage/homepage.dart';
+
 
 void main() async {
   // Ensure Flutter binding is initialized
@@ -54,7 +54,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       debugShowCheckedModeBanner: false,
-      home: AdminHomePage(), // Mulai dengan LandingPage sebagai splash screen
+      home: Splash(), // Mulai dengan LandingPage sebagai splash screen
     );
   }
 }
