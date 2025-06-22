@@ -6,6 +6,7 @@ import 'package:j_tour/core/constan.dart';
 
 class ImagePickerWidgets extends StatelessWidget {
   final File? selectedImage;
+  final String? existingImageUrl; // Tambahkan parameter untuk URL gambar dari API
   final List<String> additionalImages;
   final Function(File?) onMainImageChanged;
   final Function(List<String>) onAdditionalImagesChanged;
@@ -13,6 +14,7 @@ class ImagePickerWidgets extends StatelessWidget {
   const ImagePickerWidgets({
     Key? key,
     required this.selectedImage,
+    this.existingImageUrl, // Parameter opsional untuk URL gambar dari API
     required this.additionalImages,
     required this.onMainImageChanged,
     required this.onAdditionalImagesChanged,
@@ -390,6 +392,143 @@ class ImagePickerWidgets extends StatelessWidget {
     onAdditionalImagesChanged(updatedImages);
   }
 
+  // Helper method untuk menentukan apakah string adalah URL
+  bool _isUrl(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
+  }
+
+  // Widget untuk menampilkan gambar berdasarkan jenis (File atau URL)
+  Widget _buildImageWidget({
+    required String? imagePath,
+    File? imageFile,
+    required double width,
+    required double height,
+    required BorderRadius borderRadius,
+    BoxFit fit = BoxFit.cover,
+  }) {
+    // Prioritas: File lokal > URL dari API
+    if (imageFile != null) {
+      return Image.file(
+        imageFile,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: borderRadius,
+            color: kBlackColor.withOpacity(0.1),
+          ),
+          child: Icon(
+            Icons.error_rounded,
+            size: 48,
+            color: kBlackColor.withOpacity(0.4),
+          ),
+        ),
+      );
+    } else if (imagePath != null && imagePath.isNotEmpty) {
+      if (_isUrl(imagePath)) {
+        // Gambar dari URL API
+        return Image.network(
+          imagePath,
+          width: width,
+          height: height,
+          fit: fit,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: width,
+              height: height,
+              decoration: BoxDecoration(
+                borderRadius: borderRadius,
+                color: kBlackColor.withOpacity(0.1),
+              ),
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) => Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              borderRadius: borderRadius,
+              color: kBlackColor.withOpacity(0.1),
+            ),
+            child: Icon(
+              Icons.error_rounded,
+              size: 48,
+              color: kBlackColor.withOpacity(0.4),
+            ),
+          ),
+        );
+      } else {
+        // Gambar dari path lokal
+        return Image.file(
+          File(imagePath),
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              borderRadius: borderRadius,
+              color: kBlackColor.withOpacity(0.1),
+            ),
+            child: Icon(
+              Icons.error_rounded,
+              size: 48,
+              color: kBlackColor.withOpacity(0.4),
+            ),
+          ),
+        );
+      }
+    }
+
+    // Placeholder jika tidak ada gambar
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            kBlackColor.withOpacity(0.1),
+            kBlackColor.withOpacity(0.05),
+          ],
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.image_rounded,
+            size: 48,
+            color: kBlackColor.withOpacity(0.4),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Foto Utama',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: kBlackColor.withOpacity(0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -420,51 +559,16 @@ class ImagePickerWidgets extends StatelessWidget {
                       width: 1,
                     ),
                   ),
-                  child: selectedImage != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: Image.file(
-                            selectedImage!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              Icons.error_rounded,
-                              size: 48,
-                              color: kBlackColor.withOpacity(0.4),
-                            ),
-                          ),
-                        )
-                      : Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                kBlackColor.withOpacity(0.1),
-                                kBlackColor.withOpacity(0.05),
-                              ],
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.image_rounded,
-                                size: 48,
-                                color: kBlackColor.withOpacity(0.4),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Foto Utama',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: kBlackColor.withOpacity(0.6),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: _buildImageWidget(
+                      imagePath: existingImageUrl,
+                      imageFile: selectedImage,
+                      width: 240,
+                      height: 180,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                 ),
                 Positioned(
                   bottom: 12,
@@ -608,6 +712,7 @@ class ImagePickerWidgets extends StatelessWidget {
                 );
               }
 
+              final imagePath = additionalImages[index];
               return Container(
                 width: 120,
                 height: 120,
@@ -627,16 +732,12 @@ class ImagePickerWidgets extends StatelessWidget {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.file(
-                          File(additionalImages[index]),
+                        child: _buildImageWidget(
+                          imagePath: imagePath,
+                          imageFile: null,
                           width: 120,
                           height: 120,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.error_rounded,
-                            size: 48,
-                            color: kBlackColor.withOpacity(0.4),
-                          ),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                     ),

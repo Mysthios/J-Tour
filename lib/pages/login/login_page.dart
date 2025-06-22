@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/main_page.dart';
-import 'package:j_tour/pages/register/register_page.dart';
+import 'package:j_tour/pages/register/register_page.dart';// Import AdminHomePage
+import 'package:j_tour/pages_admin/homepage/homepage.dart';
 import 'package:j_tour/providers/auth_provider.dart';
+import 'package:j_tour/providers/bottom_navbar_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -30,42 +32,59 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _login() async {
-    if (_formKey.currentState!.validate()) {
-      FocusScope.of(context).unfocus();
+  if (_formKey.currentState!.validate()) {
+    FocusScope.of(context).unfocus();
 
-      final authNotifier = ref.read(authProvider.notifier);
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
+    final authNotifier = ref.read(authProvider.notifier);
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-      bool success = await authNotifier.loginUser(
-        email: email,
-        password: password,
+    bool success = await authNotifier.loginUser(
+      email: email,
+      password: password,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      final authState = ref.read(authProvider);
+      
+      // Reset bottom nav index sebelum navigate
+      ref.read(bottomNavBarProvider.notifier).updateIndex(0);
+      
+      // SEMUA USER (admin dan user biasa) diarahkan ke MainPage
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const MainPage()),
+        (route) => false,
       );
-
-      if (!mounted) return;
-
-      if (success) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const MainPage()),
-          (route) => false,
+      
+      // Pesan berbeda untuk admin dan user
+      if (authState.isAdmin) {
+        _showSnackBar(
+          message: "Login admin berhasil!",
+          backgroundColor: Colors.green,
+          duration: 2,
         );
+      } else {
         _showSnackBar(
           message: "Login berhasil!",
           backgroundColor: Colors.green,
           duration: 2,
         );
-      } else {
-        final errorMessage = ref.read(authProvider).errorMessage ??
-            "Gagal login. Periksa email dan password.";
-        _showSnackBar(
-          message: errorMessage,
-          backgroundColor: Colors.red,
-          duration: 3,
-        );
       }
+    } else {
+      final errorMessage = ref.read(authProvider).errorMessage ??
+          "Gagal login. Periksa email dan password.";
+      _showSnackBar(
+        message: errorMessage,
+        backgroundColor: Colors.red,
+        duration: 3,
+      );
     }
   }
+}
+
 
   void _handleForgotPassword() {
     if (ref.read(authProvider).isLoading) return;

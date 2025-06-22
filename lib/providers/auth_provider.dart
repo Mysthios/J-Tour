@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
 
-final authProvider = ChangeNotifierProvider<AuthProvider>((ref) => AuthProvider());
+final authProvider =
+    ChangeNotifierProvider<AuthProvider>((ref) => AuthProvider());
 
 enum UserRole { user, admin }
 
@@ -32,9 +33,12 @@ class AuthProvider extends ChangeNotifier {
   String? get uid => _user?['uid']?.toString();
   String? get provider => _user?['provider']?.toString();
 
-  // Admin credentials (for testing only, remove in production)
-  static const String adminEmail = "admin@jtour.com";
-  static const String adminPassword = "admin123456";
+  // Additional getters for admin info
+bool get isAdminVerified => _userRole == UserRole.admin && isAuthenticated;
+String get userRoleString => _userRole?.toString().split('.').last ?? 'unknown';
+  // // Admin credentials (for testing only, remove in production)
+  // static const String adminEmail = "admin@jtour.com";
+  // static const String adminPassword = "admin123456";
 
   AuthProvider() {
     _initializeAuth();
@@ -75,10 +79,11 @@ class AuthProvider extends ChangeNotifier {
 
   void _determineUserRole(Map<String, dynamic> user) {
     final customClaims = _safeCastToStringMap(user['customClaims'] ?? {});
-    String? email = user['email']?.toString();
     String? role = customClaims['role']?.toString();
+    bool isAdminClaim = customClaims['isAdmin'] == true;
+    String? provider = user['provider']?.toString();
 
-    if (role == 'admin' || email == adminEmail) {
+    if (role == 'admin' || isAdminClaim || provider == 'admin') {
       _userRole = UserRole.admin;
     } else {
       _userRole = UserRole.user;
@@ -196,7 +201,8 @@ class AuthProvider extends ChangeNotifier {
       if (result['success'] == true) {
         return true;
       } else {
-        String errorMessage = result['message']?.toString() ?? 'Gagal mengirim email reset password';
+        String errorMessage = result['message']?.toString() ??
+            'Gagal mengirim email reset password';
         if (result['error'] == 'UNAUTHORIZED_CONTINUE_URI') {
           errorMessage = 'Konfigurasi server salah. Hubungi admin.';
         }
@@ -211,7 +217,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Admin login
+  // Admin login - gunakan endpoint admin yang baru
   Future<bool> loginAdmin({
     required String email,
     required String password,
@@ -220,13 +226,8 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(true);
       _setError(null);
 
-      // Validate admin credentials client-side (remove in production)
-      if (email != adminEmail || password != adminPassword) {
-        _setError('Kredensial admin tidak valid');
-        return false;
-      }
-
-      final result = await _authService.signInWithEmailPassword(
+      // Gunakan method adminLogin dari AuthService
+      final result = await _authService.adminLogin(
         email: email,
         password: password,
       );
@@ -239,11 +240,11 @@ class AuthProvider extends ChangeNotifier {
             'email': userData['email']?.toString() ?? email,
             'displayName': userData['displayName']?.toString() ?? 'Admin',
             'emailVerified': userData['emailVerified'] ?? true,
-            'provider': userData['provider']?.toString() ?? 'email',
-            'customClaims': {'role': 'admin'},
+            'provider': userData['provider']?.toString() ?? 'admin',
+            'customClaims': {'role': 'admin', 'isAdmin': true},
           };
           _userRole = UserRole.admin;
-          await _loadUserProfile();
+          notifyListeners();
         }
         return true;
       } else {
@@ -258,6 +259,28 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+// Check admin status dari server
+  Future<bool> checkAdminStatus() async {
+    try {
+      final result = await _authService.checkAdminStatus();
+      if (result['success'] == true) {
+        final data = _safeCastToStringMap(result['data']);
+        bool isAdminUser = data['isAdmin'] == true;
+
+        if (isAdminUser && _userRole != UserRole.admin) {
+          _userRole = UserRole.admin;
+          notifyListeners();
+        }
+
+        return isAdminUser;
+      }
+      return false;
+    } catch (e) {
+      print('Error checking admin status: $e');
+      return false;
+    }
+  }
+
   // Load user profile
   Future<void> _loadUserProfile() async {
     try {
@@ -269,6 +292,8 @@ class AuthProvider extends ChangeNotifier {
           ...userData,
         };
         _determineUserRole(_user!);
+
+        await checkAdminStatus();
       }
     } catch (e) {
       print('Error loading user profile: $e');
@@ -390,6 +415,34 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // Get current user role dari server
+  Future<String?> getCurrentUserRole() async {
+    try {
+      final role = await _authService.getCurrentUserRole();
+      return role;
+    } catch (e) {
+      print('Error getting user role: $e');
+      return null;
+    }
+  }
+
+  // Validate admin access
+Future<bool> validateAdminAccess() async {
+  if (!isAuthenticated) return false;
+  
+  try {
+    bool isAdminUser = await _authService.isAdmin();
+    if (isAdminUser && _userRole != UserRole.admin) {
+      _userRole = UserRole.admin;
+      notifyListeners();
+    }
+    return isAdminUser;
+  } catch (e) {
+    print('Error validating admin access: $e');
+    return false;
+  }
+}
 
   // Check if user has specific role
   bool hasRole(UserRole role) {

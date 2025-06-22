@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:j_tour/models/place_model.dart';
+import 'package:j_tour/providers/review_provider.dart';
+import 'package:j_tour/providers/auth_provider.dart';
 
-class WriteReviewPage extends StatefulWidget {
+class WriteReviewPage extends ConsumerStatefulWidget {
   final Place place;
   
   const WriteReviewPage({super.key, required this.place});
 
   @override
-  State<WriteReviewPage> createState() => _WriteReviewPageState();
+  ConsumerState<WriteReviewPage> createState() => _WriteReviewPageState();
 }
 
-class _WriteReviewPageState extends State<WriteReviewPage> {
+class _WriteReviewPageState extends ConsumerState<WriteReviewPage> {
   double _rating = 0;
   final TextEditingController _reviewController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
@@ -37,10 +40,8 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
           _selectedImages.add(File(image.path));
         });
         
-        // Tutup bottom sheet
         Navigator.of(context).pop();
         
-        // Tampilkan snackbar sukses
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Foto berhasil ditambahkan'),
@@ -81,10 +82,7 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
               const SizedBox(height: 20),
               const Text(
                 'Pilih Sumber Foto',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 20),
               Row(
@@ -110,7 +108,6 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
     );
   }
 
-  // Widget untuk option picker
   Widget _imagePickerOption({
     required IconData icon,
     required String label,
@@ -129,13 +126,7 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
           children: [
             Icon(icon, size: 30, color: Colors.blue),
             const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -148,7 +139,7 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
     });
   }
 
-  void _submitReview() {
+  Future<void> _submitReview() async {
     if (_rating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Silakan berikan rating')),
@@ -163,17 +154,54 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
       return;
     }
 
-    // TODO: Submit review to backend
-    // For now, just show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ulasan berhasil dikirim!')),
-    );
+    final auth = ref.read(authProvider);
+    final userId = auth.uid;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User tidak terautentikasi')),
+      );
+      return;
+    }
+
+    ref.read(authProvider);
+    final userName = auth.displayName ?? auth.email ?? 'Anonymous';
     
-    Navigator.pop(context);
+    final success = await ref.read(reviewProvider.notifier).createReview(
+      placeId: widget.place.id,
+      userId: userId,
+      userName: userName,
+      rating: _rating.toInt(),
+      comment: _reviewController.text.trim(),
+      images: _selectedImages.isNotEmpty ? _selectedImages : null,
+    );
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ulasan berhasil ditambahkan!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isSubmitting = ref.watch(reviewSubmittingProvider);
+
+    ref.listen<String?>(reviewErrorProvider, (previous, next) {
+      if (next != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $next'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -184,12 +212,8 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Beri Ulasan',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          'Tulis Ulasan',
+          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
       ),
@@ -198,17 +222,62 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Rating instruction
-            const Text(
-              'Beri penilaian dan ulasan tentang tempat ini',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+            // Place info
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      widget.place.image.isNotEmpty ? widget.place.image : '',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.place, color: Colors.grey),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.place.name,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.place.location,
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
             
-            // Star rating
+            // Rating
+            const Text('Rating', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
             Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -230,13 +299,7 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
             const SizedBox(height: 30),
             
             // Review text field
-            const Text(
-              'Ulasan',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            const Text('Ulasan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
             
             Container(
@@ -248,41 +311,32 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
                 controller: _reviewController,
                 maxLines: 5,
                 decoration: const InputDecoration(
-                  hintText: 'Tulis ulasan Anda',
+                  hintText: 'Tulis ulasan Anda tentang tempat ini...',
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.all(16),
-                  counterText: '0/500',
                 ),
                 maxLength: 500,
               ),
             ),
             const SizedBox(height: 20),
             
-            // Image section
+            // Images section
             Row(
               children: [
-                const Text(
-                  'Tambah Foto (Opsional)',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                const Text('Foto', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: _showImageSourceDialog,
                   icon: const Icon(Icons.add_a_photo, size: 18),
                   label: const Text('Tambah'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.blue,
-                  ),
+                  style: TextButton.styleFrom(foregroundColor: Colors.blue),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             
             // Selected images
-            if (_selectedImages.isNotEmpty)
+            if (_selectedImages.isNotEmpty) ...[
               SizedBox(
                 height: 100,
                 child: ListView.builder(
@@ -318,11 +372,7 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
                                   shape: BoxShape.circle,
                                 ),
                                 padding: const EdgeInsets.all(4),
-                                child: const Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
+                                child: const Icon(Icons.close, color: Colors.white, size: 16),
                               ),
                             ),
                           ),
@@ -332,6 +382,29 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
                   },
                 ),
               ),
+            ] else ...[
+              Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.image_outlined, size: 32, color: Colors.grey[400]),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Belum ada foto',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             
             const SizedBox(height: 40),
             
@@ -339,27 +412,40 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _submitReview,
+                onPressed: isSubmitting ? null : _submitReview,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: isSubmitting ? Colors.grey : Colors.blue,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text(
-                  'Kirim Ulasan',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: isSubmitting
+                    ? const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Text('Mengirim...', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                        ],
+                      )
+                    : const Text('Kirim Ulasan', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
   }
 }

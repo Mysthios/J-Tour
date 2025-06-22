@@ -86,94 +86,82 @@ class _CreatePlacePageState extends ConsumerState<CreatePlacePage> {
     super.dispose();
   }
 
-  Future<void> _saveChanges() async {
-    if (_isSubmitting) return; // Cegah pengiriman ganda
+ Future<void> _saveChanges() async {
+  if (_isSubmitting) return;
 
-    // Validasi form
-    if (!_formKey.currentState!.validate()) {
-      _showErrorSnackBar('Harap isi semua kolom yang diperlukan dengan benar.');
-      return;
-    }
-
-    // Validasi tambahan
-    if (_selectedCategory == null || _selectedCategory!.isEmpty) {
-      _showErrorSnackBar('Kategori wisata harus dipilih.');
-      return;
-    }
-
-    if (_selectedLocation == null) {
-      _showErrorSnackBar('Lokasi harus ditentukan.');
-      return;
-    }
-
-    // Validasi gambar utama
-    if (_selectedImage == null) {
-      _showErrorSnackBar('Gambar utama harus dipilih.');
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    try {
-      // Buat objek Place dari data form
-      final place = Place(
-        id: '', // Akan di-generate oleh server
-        name: _nameController.text.trim(),
-        location: _locationController.text.trim(),
-        description: _descriptionController.text.trim(),
-        weekdaysHours: _weekdaysHoursController.text.trim(),
-        weekendHours: _weekendHoursController.text.trim(),
-        price: _parsePriceFromController(_priceController.text),
-        weekendPrice: _parsePriceFromController(_weekendPriceController.text),
-        weekdayPrice: _parsePriceFromController(_priceController.text),
-        category: _selectedCategory!,
-        facilities: _facilities,
-        latitude: _selectedLocation!.latitude,
-        longitude: _selectedLocation!.longitude,
-        image: _selectedImage?.path ?? '',
-        isLocalImage: _selectedImage != null,
-        additionalImages: _additionalImages,
-        rating: null, // Let server handle default rating
-      );
-
-      // Debug: Log data yang akan dikirim
-      print('=== CREATE PLACE PAGE DEBUG ===');
-      print('Place data: ${place.toJson()}');
-      print('Selected image: ${_selectedImage?.path}');
-      print('Additional images: $_additionalImages');
-
-      // Simpan menggunakan provider yang benar
-      final success = await ref.read(placesProvider.notifier).addPlace(place);
-
-      if (success) {
-        _showSuccessSnackBar('Wisata berhasil ditambahkan!');
-        
-        // Tunggu sebentar agar snackbar terlihat
-        await Future.delayed(const Duration(seconds: 1));
-        
-        // Kembali ke halaman sebelumnya dengan hasil success
-        if (mounted) {
-          Navigator.of(context).pop(true);
-        }
-      } else {
-        // Ambil error dari provider state
-        final error = ref.read(placesProvider).error;
-        _showErrorSnackBar(error ?? 'Gagal menambahkan wisata. Silakan coba lagi.');
-      }
-    } catch (e) {
-      print('Error in _saveChanges: $e');
-      _handleError(e);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
-    }
+  if (!_formKey.currentState!.validate()) {
+    _showErrorSnackBar('Harap isi semua kolom yang diperlukan dengan benar.');
+    return;
   }
 
+  if (_selectedCategory == null || _selectedCategory!.isEmpty) {
+    _showErrorSnackBar('Kategori wisata harus dipilih.');
+    return;
+  }
+
+  if (_selectedLocation == null) {
+    _showErrorSnackBar('Lokasi harus ditentukan.');
+    return;
+  }
+
+  if (_selectedImage == null) {
+    _showErrorSnackBar('Gambar utama harus dipilih.');
+    return;
+  }
+
+  setState(() {
+    _isSubmitting = true;
+  });
+
+  try {
+    final place = Place(
+      id: '',
+      name: _nameController.text.trim(),
+      location: _locationController.text.trim(),
+      description: _descriptionController.text.trim(),
+      weekdaysHours: _weekdaysHoursController.text.trim(),
+      weekendHours: _weekendHoursController.text.trim(),
+      price: _parsePriceFromController(_priceController.text),
+      weekendPrice: _parsePriceFromController(_weekendPriceController.text),
+      weekdayPrice: _parsePriceFromController(_priceController.text),
+      category: _selectedCategory!,
+      facilities: _facilities,
+      latitude: _selectedLocation!.latitude,
+      longitude: _selectedLocation!.longitude,
+      image: _selectedImage!.path,
+      additionalImages: _additionalImages,
+      isLocalImage: true,
+      rating: null,
+    );
+
+    print('=== CREATE PLACE PAGE DEBUG ===');
+    print('Place data: ${place.toJson()}');
+    print('Main image: ${_selectedImage?.path}');
+    print('Additional images: $_additionalImages');
+
+    final success = await ref.read(placesProvider.notifier).addPlace(place);
+
+    if (success) {
+      _showSuccessSnackBar('Wisata berhasil ditambahkan!');
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } else {
+      final error = ref.read(placesProvider).error;
+      _showErrorSnackBar(error ?? 'Gagal menambahkan wisata. Silakan coba lagi.');
+    }
+  } catch (e) {
+    print('Error in _saveChanges: $e');
+    _handleError(e);
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
+  }
+}
   void _handleError(dynamic error) {
     String errorMessage;
     

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://10.132.1.133/api/auth';
+  static const String baseUrl = 'http://10.132.12.217:3000/api/auth';
 
   // Private variables for tracking refresh state
   static bool _isRefreshing = false;
@@ -75,7 +75,9 @@ class AuthService {
 
         if (responseData['error'] == 'INVALID_REFRESH_TOKEN' ||
             responseData['error'] == 'USER_NOT_FOUND' ||
-            responseData['error'] == 'USER_DISABLED') {
+            responseData['error'] == 'USER_DISABLED' ||
+            responseData['error'] == 'ADMIN_ACCESS_REQUIRED' ||
+            responseData['error'] == 'INSUFFICIENT_PERMISSIONS') {
           await _clearTokenStorage();
           throw Exception('Sesi kadaluarsa. Silakan login kembali.');
         }
@@ -131,7 +133,8 @@ class AuthService {
           await _saveTokenToStorage(responseData['accessToken'].toString());
 
           if (responseData['refreshToken'] != null) {
-            await _saveRefreshTokenToStorage(responseData['refreshToken'].toString());
+            await _saveRefreshTokenToStorage(
+                responseData['refreshToken'].toString());
           }
 
           return {
@@ -302,11 +305,13 @@ class AuthService {
       if (response.statusCode == 200) {
         return {
           'success': true,
-          'message': data['message']?.toString() ?? 'Email reset password telah dikirim',
+          'message': data['message']?.toString() ??
+              'Email reset password telah dikirim',
           'data': _safeCastToStringMap(data['data']),
         };
       } else {
-        String errorMessage = data['message']?.toString() ?? 'Gagal mengirim email reset password';
+        String errorMessage = data['message']?.toString() ??
+            'Gagal mengirim email reset password';
         if (data['error'] == 'UNAUTHORIZED_CONTINUE_URI') {
           errorMessage = 'Konfigurasi server salah. Hubungi admin.';
         }
@@ -374,7 +379,8 @@ class AuthService {
       if (response.statusCode == 200) {
         return {
           'success': true,
-          'message': data['message']?.toString() ?? 'Profil berhasil diperbarui',
+          'message':
+              data['message']?.toString() ?? 'Profil berhasil diperbarui',
           'data': _safeCastToStringMap(data['data']),
         };
       } else {
@@ -467,6 +473,112 @@ class AuthService {
       final result = await getUserProfile();
       if (result['success'] == true) {
         return _safeCastToStringMap(result['data']);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Admin Login
+  Future<Map<String, dynamic>> adminLogin({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/admin/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final data = _safeCastToStringMap(jsonDecode(response.body));
+
+      if (response.statusCode == 200) {
+        final userData = _safeCastToStringMap(data['data']);
+
+        if (userData['accessToken'] != null) {
+          await _saveTokenToStorage(userData['accessToken'].toString());
+        }
+
+        if (userData['refreshToken'] != null) {
+          await _saveRefreshTokenToStorage(userData['refreshToken'].toString());
+        }
+
+        return {
+          'success': true,
+          'message': data['message']?.toString() ?? 'Login admin berhasil',
+          'data': userData,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message']?.toString() ?? 'Login admin gagal',
+          'errors': data['errors'],
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Login admin gagal: ${e.toString()}',
+      };
+    }
+  }
+
+// Check admin status
+  Future<Map<String, dynamic>> checkAdminStatus() async {
+    try {
+      final response = await _authenticatedRequest(
+        method: 'GET',
+        endpoint: '$baseUrl/admin/status',
+      );
+
+      final data = _safeCastToStringMap(jsonDecode(response.body));
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': _safeCastToStringMap(data['data']),
+        };
+      } else {
+        return {
+          'success': false,
+          'message':
+              data['message']?.toString() ?? 'Gagal mengecek status admin',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Gagal mengecek status admin: ${e.toString()}',
+      };
+    }
+  }
+
+  // Helper method to check if current user is admin
+  Future<bool> isAdmin() async {
+    try {
+      final result = await checkAdminStatus();
+      if (result['success'] == true) {
+        final data = _safeCastToStringMap(result['data']);
+        return data['isAdmin'] == true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Get current user role
+  Future<String?> getCurrentUserRole() async {
+    try {
+      final result = await checkAdminStatus();
+      if (result['success'] == true) {
+        final data = _safeCastToStringMap(result['data']);
+        return data['role']?.toString();
       }
       return null;
     } catch (e) {
