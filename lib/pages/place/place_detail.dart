@@ -18,9 +18,14 @@ class PlaceDetailPage extends ConsumerStatefulWidget {
   final Place place;
 
   const PlaceDetailPage({
-    super.key, 
+    super.key,
     required this.place,
   });
+
+  // const PlaceDetailPage({
+  //   super.key,
+  //   required this.place,
+  // });
 
   @override
   ConsumerState<PlaceDetailPage> createState() => _PlaceDetailPageState();
@@ -34,7 +39,7 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
   void initState() {
     super.initState();
     _currentPlace = widget.place;
-    
+
     // Load reviews when page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadReviews();
@@ -49,11 +54,14 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
 
   void _loadReviews() {
     // Load reviews for this place (limit to 3 for preview)
-    ref.read(reviewProvider.notifier).getReviewsByPlace(_currentPlace.id, limit: 3);
+    ref
+        .read(reviewProvider.notifier)
+        .getReviewsByPlace(_currentPlace.id, limit: 3);
   }
 
   void _updateCurrentPlace() async {
-    final updatedPlace = await ref.read(placesProvider.notifier).getPlaceById(widget.place.id);
+    final updatedPlace =
+        await ref.read(placesProvider.notifier).getPlaceById(widget.place.id);
     if (updatedPlace != null && mounted) {
       setState(() {
         _currentPlace = updatedPlace;
@@ -95,7 +103,7 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
   @override
   Widget build(BuildContext context) {
     final reviewState = ref.watch(reviewProvider);
-    
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -121,7 +129,7 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
                     onDirections: _navigateToMap,
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Reviews Section
                   UserPlaceReviewsSection(
                     place: _currentPlace,
@@ -132,7 +140,7 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
                     onSeeAllReviews: _navigateToReviews,
                     onWriteReview: _navigateToWriteReview,
                   ),
-                  
+
                   const SizedBox(height: 20),
                 ],
               ),
