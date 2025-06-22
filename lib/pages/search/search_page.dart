@@ -1,39 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
-import 'package:j_tour/pages/place/place_detail.dart';
-import 'package:intl/intl.dart';
+import 'package:j_tour/providers/place_provider.dart';
+import 'package:j_tour/pages/search/explore_widgets.dart';
 
-class SearchPage extends StatefulWidget {
-  final String? initialCategory; // Add parameter for initial category
+class ExplorePage extends ConsumerStatefulWidget {
+  final String? initialCategory;
 
-  const SearchPage({super.key, this.initialCategory});
+  const ExplorePage({super.key, this.initialCategory});
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  ConsumerState<ExplorePage> createState() => _ExplorePageState();
 }
 
 const Color kPrimaryBlue = Color(0xFF0072BC);
 
-class _SearchPageState extends State<SearchPage> {
+class _ExplorePageState extends ConsumerState<ExplorePage> {
   int _currentIndex = 1;
   final List<String> categories = [
     "Populer",
-    "Rekomendasi",
+    "Rekomendasi", 
     "Pantai",
     "Air Terjun",
     "Pegunungan"
   ];
   
-  // Search and filter variables
-  String? selectedCategory; // Initially no category is selected
+  String? selectedCategory;
   String searchQuery = "";
-  String sortBy = "name"; // name, rating, price
+  String sortBy = "name";
   bool isAscending = true;
-  
-  List<Place> allPlaces = [];
-  bool isLoading = true;
 
   final List<String> sortOptions = [
     "Nama (A-Z)",
@@ -47,35 +42,20 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void initState() {
     super.initState();
-    // Set initial category if provided, but don't auto-select on first load
-    // selectedCategory = widget.initialCategory;
-    loadPlacesData();
-  }
-
-  Future<void> loadPlacesData() async {
-    try {
-      // Load JSON data from assets
-      final String response = await rootBundle.loadString('assets/places.json');
-      final List<dynamic> data = json.decode(response);
-
-      setState(() {
-        allPlaces = data.map((placeJson) => Place.fromJson(placeJson)).toList();
-        isLoading = false;
-      });
-    } catch (e) {
-      print('Error loading places data: $e');
-      setState(() {
-        isLoading = false;
-      });
-    }
+    selectedCategory = widget.initialCategory;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(placesProvider.notifier).loadPlaces();
+    });
   }
 
   void _onNavBarTap(int index) {
     setState(() => _currentIndex = index);
   }
 
-  List<Place> get filteredPlaces {
-    List<Place> filtered = List.from(allPlaces);
+  List<Place> get filteredAndSortedPlaces {
+    final placesState = ref.watch(placesProvider);
+    final List<Place> places = placesState.places;
+    List<Place> filtered = List.from(places);
 
     // Filter by search query
     if (searchQuery.isNotEmpty) {
@@ -105,12 +85,10 @@ class _SearchPageState extends State<SearchPage> {
               .toList();
           break;
         case "Populer":
-          // Show popular places (rating >= 4.5)
-          filtered = filtered.where((place) => place.rating != null && place.rating! >= 4.5).toList();
+          filtered = filtered.where((place) => (place.rating ?? 0) >= 4.5).toList();
           break;
         case "Rekomendasi":
-          // Show recommended places (rating >= 4.0)
-          filtered = filtered.where((place) => place.rating != null && place.rating! >= 4.0).toList();
+          filtered = filtered.where((place) => (place.rating ?? 0) >= 4.0).toList();
           break;
       }
     }
@@ -126,7 +104,7 @@ class _SearchPageState extends State<SearchPage> {
           comparison = (a.rating ?? 0).compareTo(b.rating ?? 0);
           break;
         case "price":
-          comparison = a.price.compareTo(b.price);
+          comparison = (a.price ?? 0).compareTo(b.price ?? 0);
           break;
       }
       return isAscending ? comparison : -comparison;
@@ -309,6 +287,14 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final places = filteredAndSortedPlaces;
+    final placesState = ref.watch(placesProvider);
+    final isLoading = placesState.isLoading;
+    final error = placesState.error;
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
       appBar: AppBar(
@@ -326,134 +312,158 @@ class _SearchPageState extends State<SearchPage> {
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 🔍 Search bar & filter
-            Row(
+      body: Column(
+        children: [
+          // Fixed Search Bar and Categories Section
+          Container(
+            color: const Color(0xFFF6F6F6),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
               children: [
-                Expanded(
-                  child: Container(
-                    height: 45,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 12),
+                
+                // Search Bar dan Filter
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 45,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.search, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                onChanged: (value) {
+                                  setState(() {
+                                    searchQuery = value;
+                                  });
+                                },
+                                decoration: const InputDecoration(
+                                  hintText: "Cari wisata...",
+                                  hintStyle: TextStyle(color: Colors.grey),
+                                  border: InputBorder.none,
+                                  isCollapsed: true,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.search, color: Colors.grey),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            onChanged: (value) {
-                              setState(() {
-                                searchQuery = value;
-                              });
-                            },
-                            decoration: const InputDecoration(
-                              hintText: "Cari",
-                              hintStyle: TextStyle(color: Colors.grey),
-                              border: InputBorder.none,
-                              isCollapsed: true,
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: _showFilterDialog,
+                      child: Container(
+                        height: 45,
+                        width: 45,
+                        decoration: BoxDecoration(
+                          color: kPrimaryBlue,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: kPrimaryBlue.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.tune, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Kategori Chips
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: categories.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      final isSelected = selectedCategory == category;
+                      return GestureDetector(
+                        onTap: () => setState(() {
+                          selectedCategory = isSelected ? null : category;
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: isSelected ? kPrimaryBlue : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: kPrimaryBlue),
+                            boxShadow: isSelected ? [
+                              BoxShadow(
+                                color: kPrimaryBlue.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ] : null,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            category,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : kPrimaryBlue,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 13,
                             ),
                           ),
                         ),
+                      );
+                    },
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Active Filters Chips
+                if (selectedCategory != null || searchQuery.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (selectedCategory != null)
+                          Chip(
+                            label: Text(selectedCategory!),
+                            deleteIcon: const Icon(Icons.close, size: 16),
+                            onDeleted: () => setState(() => selectedCategory = null),
+                            backgroundColor: kPrimaryBlue.withOpacity(0.1),
+                            labelStyle: const TextStyle(color: kPrimaryBlue),
+                          ),
+                        if (searchQuery.isNotEmpty)
+                          Chip(
+                            label: Text('"$searchQuery"'),
+                            deleteIcon: const Icon(Icons.close, size: 16),
+                            onDeleted: () => setState(() => searchQuery = ""),
+                            backgroundColor: Colors.orange.withOpacity(0.1),
+                            labelStyle: const TextStyle(color: Colors.orange),
+                          ),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: _showFilterDialog,
-                  child: Container(
-                    height: 45,
-                    width: 45,
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.tune, color: Colors.white, size: 20),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // 📂 Kategori scrollable
-            SizedBox(
-              height: 36,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final category = categories[index];
-                  final isSelected = selectedCategory == category;
-                  return GestureDetector(
-                    onTap: () => setState(() {
-                      // Toggle selection - if already selected, deselect it
-                      selectedCategory = isSelected ? null : category;
-                    }),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: isSelected ? kPrimaryBlue : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: kPrimaryBlue),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        category,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : kPrimaryBlue,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Active Filters Chips
-            if (selectedCategory != null || searchQuery.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (selectedCategory != null)
-                      Chip(
-                        label: Text(selectedCategory!),
-                        deleteIcon: const Icon(Icons.close, size: 16),
-                        onDeleted: () => setState(() => selectedCategory = null),
-                        backgroundColor: kPrimaryBlue.withOpacity(0.1),
-                        labelStyle: const TextStyle(color: kPrimaryBlue),
-                      ),
-                    if (searchQuery.isNotEmpty)
-                      Chip(
-                        label: Text('"$searchQuery"'),
-                        deleteIcon: const Icon(Icons.close, size: 16),
-                        onDeleted: () => setState(() => searchQuery = ""),
-                        backgroundColor: Colors.orange.withOpacity(0.1),
-                        labelStyle: const TextStyle(color: Colors.orange),
-                      ),
-                  ],
-                ),
-              ),
-
-            // Header dengan jumlah
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                
+                // Header dengan jumlah
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
                       "Destinasi Wisata",
@@ -463,7 +473,7 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                     ),
                     Text(
-                      "${filteredPlaces.length} destinasi ditemukan",
+                      "${places.length} destinasi ditemukan",
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -471,227 +481,120 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                   ],
                 ),
+                
+                const SizedBox(height: 16),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // 🧾 List destinasi
-            Expanded(
-              child: isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(kPrimaryBlue),
-                      ),
-                    )
-                  : filteredPlaces.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                searchQuery.isNotEmpty || selectedCategory != null
-                                    ? Icons.search_off
-                                    : Icons.location_off,
-                                size: 64,
+          ),
+          
+          // Scrollable Content
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await ref.read(placesProvider.notifier).refreshPlaces();
+              },
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(kPrimaryBlue),
+                          ),
+                        ),
+                      )
+                    else if (error != null)
+                      Center(
+                        child: Column(
+                          children: [
+                            SizedBox(height: screenHeight * 0.1),
+                            const Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Terjadi kesalahan: $error',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.red,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                ref.read(placesProvider.notifier).refreshPlaces();
+                              },
+                              child: const Text('Coba Lagi'),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (places.isEmpty)
+                      Center(
+                        child: Column(
+                          children: [
+                            SizedBox(height: screenHeight * 0.1),
+                            Icon(
+                              searchQuery.isNotEmpty || selectedCategory != null
+                                  ? Icons.search_off
+                                  : Icons.location_off,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              searchQuery.isNotEmpty || selectedCategory != null
+                                  ? 'Tidak ada destinasi ditemukan'
+                                  : 'Belum ada destinasi wisata',
+                              style: const TextStyle(
+                                fontSize: 16,
                                 color: Colors.grey,
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                searchQuery.isNotEmpty || selectedCategory != null
-                                    ? 'Tidak ada destinasi ditemukan'
-                                    : 'Belum ada destinasi wisata',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
+                            ),
+                            if (searchQuery.isNotEmpty || selectedCategory != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      searchQuery = "";
+                                      selectedCategory = null;
+                                    });
+                                  },
+                                  child: const Text('Reset Filter'),
                                 ),
                               ),
-                              if (searchQuery.isNotEmpty || selectedCategory != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: TextButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        searchQuery = "";
-                                        selectedCategory = null;
-                                      });
-                                    },
-                                    child: const Text('Reset Filter'),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        )
-                      : _buildPlacesList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlacesList() {
-    // For all categories, use the same layout - vertical list
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 100),
-      itemCount: filteredPlaces.length,
-      itemBuilder: (context, index) {
-        final place = filteredPlaces[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: DestinationCard(
-            place: place,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class DestinationCard extends StatelessWidget {
-  final Place place;
-
-  const DestinationCard({
-    super.key,
-    required this.place,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final formatter =
-        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PlaceDetailPage(place: place),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Container untuk gambar
-            Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(
-                minHeight: 140,
-                maxHeight: 200, // Batas maksimal tinggi
-              ),
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.asset(
-                  place.image,
-                  width: double.infinity,
-                  fit: BoxFit
-                      .fitWidth, // Fit width agar gambar tidak terpotong horizontal
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 140,
-                      width: double.infinity,
-                      color: Colors.grey[300],
-                      child: const Icon(
-                        Icons.image_not_supported,
-                        color: Colors.grey,
-                        size: 50,
+                          ],
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: places.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 24),
+                            child: ExploreDestinationCard(
+                              place: places[index],
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
+                    SizedBox(height: screenHeight * 0.04),
+                  ],
                 ),
               ),
             ),
-            // Informasi tempat
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nama dan Harga
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          place.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Text(
-                            formatter.format(place.price),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: kPrimaryBlue,
-                            ),
-                          ),
-                          const Text(
-                            '/Orang',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  // Lokasi
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on,
-                          size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          place.location,
-                          style:
-                              const TextStyle(color: Colors.grey, fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  // Rating
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 14, color: Colors.orange),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${place.rating}",
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

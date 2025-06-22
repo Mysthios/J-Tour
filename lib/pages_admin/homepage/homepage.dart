@@ -3,22 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:j_tour/models/place_model.dart';
-import 'package:j_tour/pages_admin/place/add_place_page.dart';
+import 'package:j_tour/pages/homepage/widgets/bottom_navbar.dart';
+import 'package:j_tour/pages_admin/place/add_place/add_place_page.dart';
+import 'package:j_tour/pages_admin/place/edit_place/edit_place_page.dart' hide Scaffold;
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:j_tour/pages_admin/homepage/widgets/wisata_anda_card.dart';
 import 'package:j_tour/pages_admin/homepage/widgets/weather_header.dart';
-import 'package:j_tour/pages_admin/place/edit_place_page.dart';
-
+import 'package:j_tour/providers/bottom_navbar_provider.dart';
 class AdminHomePage extends ConsumerStatefulWidget {
   const AdminHomePage({super.key});
 
   @override
-  ConsumerState<AdminHomePage> createState() => _HomePageState();
+  ConsumerState<AdminHomePage> createState() => _AdminHomePageState();
 }
 
 const Color kPrimaryBlue = Color(0xFF0072BC);
 
-class _HomePageState extends ConsumerState<AdminHomePage> {
+class _AdminHomePageState extends ConsumerState<AdminHomePage> {
   // Search and filter variables
   String searchQuery = "";
   String? selectedCategory;
@@ -42,7 +43,8 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
   ];
 
   List<Place> get filteredAndSortedPlaces {
-    final places = ref.watch(placesNotifierProvider);
+    final placesState = ref.watch(placesProvider);
+    final List<Place> places = placesState.places;
     List<Place> filtered = List.from(places);
 
     // Filter by search query
@@ -89,7 +91,7 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
           comparison = (a.rating ?? 0).compareTo(b.rating ?? 0);
           break;
         case "price":
-          comparison = a.price.compareTo(b.price);
+          comparison = (a.price ?? 0).compareTo(b.price ?? 0);
           break;
       }
       return isAscending ? comparison : -comparison;
@@ -98,9 +100,18 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
     return filtered;
   }
 
+  void _onNavBarTap(int index) {
+    ref.read(bottomNavBarProvider.notifier).updateIndex(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     final places = filteredAndSortedPlaces;
+    final placesState = ref.watch(placesProvider);
+    final isLoading = placesState.isLoading;
+    final error = placesState.error;
+    final currentIndex = ref.watch(bottomNavBarProvider);
+    
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -328,55 +339,93 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: screenHeight * 0.01),
-            places.isEmpty
-                ? Center(
-                    child: Column(
-                      children: [
-                        SizedBox(height: screenHeight * 0.1),
-                        Icon(
-                          searchQuery.isNotEmpty || selectedCategory != null
-                              ? Icons.search_off
-                              : Icons.location_off,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          searchQuery.isNotEmpty || selectedCategory != null
-                              ? 'Tidak ada wisata ditemukan'
-                              : 'Belum ada tempat wisata',
-                          style: const TextStyle(
-                            fontSize: 16,
+                  
+                  if (isLoading)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (error != null)
+                    Center(
+                      child: Column(
+                        children: [
+                          SizedBox(height: screenHeight * 0.1),
+                          const Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Terjadi kesalahan: $error',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.red,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              ref.read(placesProvider.notifier).refreshPlaces();
+                            },
+                            child: const Text('Coba Lagi'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (places.isEmpty)
+                    Center(
+                      child: Column(
+                        children: [
+                          SizedBox(height: screenHeight * 0.1),
+                          Icon(
+                            searchQuery.isNotEmpty || selectedCategory != null
+                                ? Icons.search_off
+                                : Icons.location_off,
+                            size: 64,
                             color: Colors.grey,
                           ),
-                        ),
-                        if (searchQuery.isNotEmpty || selectedCategory != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  searchQuery = "";
-                                  selectedCategory = null;
-                                });
-                              },
-                              child: const Text('Reset Filter'),
+                          const SizedBox(height: 16),
+                          Text(
+                            searchQuery.isNotEmpty || selectedCategory != null
+                                ? 'Tidak ada wisata ditemukan'
+                                : 'Belum ada tempat wisata',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
                             ),
                           ),
-                      ],
+                          if (searchQuery.isNotEmpty || selectedCategory != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    searchQuery = "";
+                                    selectedCategory = null;
+                                  });
+                                },
+                                child: const Text('Reset Filter'),
+                              ),
+                            ),
+                        ],
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: places.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: WisataAndaCard(place: places[index]),
+                        );
+                      },
                     ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: places.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: WisataAndaCard(place: places[index]),
-                      );
-                    },
-                  ),
                   SizedBox(height: screenHeight * 0.04),
                 ],
               ),
@@ -389,6 +438,11 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
         backgroundColor: kPrimaryBlue,
         child: const Icon(Icons.add, color: Colors.white),
       ),
+      // bottomNavigationBar: CustomBottomNavBar(
+      //   currentIndex: currentIndex,
+      //   onTap: _onNavBarTap,
+      //   role: 'admin',
+      // ),
     );
   }
 
@@ -564,37 +618,6 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
     );
   }
 
-  void _showPlaceOptions(BuildContext context, Place place) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Edit Wisata'),
-              onTap: () {
-                Navigator.pop(context);
-                _showEditPlaceDialog(context, place);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Hapus Wisata',
-                  style: TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteConfirmation(context, place);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showDeleteConfirmation(BuildContext context, Place place) {
     showDialog(
       context: context,
@@ -608,12 +631,22 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
           ),
           TextButton(
             child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-            onPressed: () {
-              ref.read(placesNotifierProvider.notifier).deletePlace(place.id);
+            onPressed: () async {
+              final success = await ref.read(placesProvider.notifier).deletePlace(place.id);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${place.name} telah dihapus')),
-              );
+              
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${place.name} telah dihapus')),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Gagal menghapus tempat wisata'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
           ),
         ],
@@ -637,49 +670,16 @@ class _HomePageState extends ConsumerState<AdminHomePage> {
   }
 
   Future<void> _showAddPlaceDialog(BuildContext context) async {
-    final newPlace = Place(
-      name: 'Tempat Wisata Baru',
-      location: 'Lokasi',
-      price: 15000,
-      rating: 4.5,
-      image: 'assets/images/papuma.jpeg',
-      isLocalImage: false,
-      description: 'Deskripsi tempat wisata',
-      weekdaysHours: '06:00 - 17:00',
-      weekendHours: '06:00 - 18:00',
-      weekendPrice: 25000,
-      facilities: ['Area Parkir', 'Toilet'],
-      reviewCount: 0,
-      additionalImages: [],
-      latitude: null,
-      longitude: null,
-    );
-
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CreatePlacePage(),
+        builder: (context) => const CreatePlacePage(),
       ),
     );
 
     if (result == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Tempat wisata berhasil ditambahkan')),
-      );
-    }
-  }
-
-  Future<void> _showEditPlaceDialog(BuildContext context, Place place) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditPlacePage(place: place),
-      ),
-    );
-
-    if (result == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tempat wisata berhasil diperbarui')),
       );
     }
   }

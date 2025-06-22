@@ -1,23 +1,117 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/pages/account/edit_profile.dart';
 import 'package:j_tour/pages/account/about_jtour.dart';
 import 'package:j_tour/pages/account/privacy_policy.dart';
+import 'package:j_tour/pages/login/login_page.dart';
+import 'package:j_tour/providers/auth_provider.dart';
 
-class AccountPage extends StatefulWidget {
+class AccountPage extends ConsumerStatefulWidget {
   const AccountPage({super.key});
 
   @override
-  State<AccountPage> createState() => _AccountPageState();
+  ConsumerState<AccountPage> createState() => _AccountPageState();
 }
 
-class _AccountPageState extends State<AccountPage> {
+class _AccountPageState extends ConsumerState<AccountPage> {
   int _currentIndex = 3; // Set the initial index to 3 for the Account page
+  
   void _onNavBarTap(int index) {
     setState(() => _currentIndex = index);
   }
 
+  // Method untuk handle logout
+  Future<void> _handleLogout() async {
+    final authNotifier = ref.read(authProvider.notifier);
+    
+    // Tampilkan loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+
+    try {
+      // Panggil logout dari AuthProvider
+      bool success = await authNotifier.logout();
+      
+      // Tutup loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (success) {
+        // Jika logout berhasil, arahkan ke LoginPage dan clear semua route
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+            (route) => false,
+          );
+        }
+      } else {
+        // Jika logout gagal, tampilkan error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authNotifier.errorMessage ?? 'Logout gagal'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Tutup loading dialog jika ada error
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Terjadi kesalahan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Method untuk tampilkan dialog konfirmasi logout
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+          actions: [
+            TextButton(
+              child: const Text('Batal'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _handleLogout();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authProvider);
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
       appBar: AppBar(
@@ -60,29 +154,65 @@ class _AccountPageState extends State<AccountPage> {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.black,
-                          size: 32,
-                        ),
+                        child: auth.photoURL != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.network(
+                                  auth.photoURL!,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(
+                                      Icons.person,
+                                      color: Colors.black,
+                                      size: 32,
+                                    );
+                                  },
+                                ),
+                              )
+                            : const Icon(
+                                Icons.person,
+                                color: Colors.black,
+                                size: 32,
+                              ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Fairuz Zaki',
-                        style: TextStyle(
+                      Text(
+                        auth.displayName ?? 'Pengguna',
+                        style: const TextStyle(
                           fontSize: 16,
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        'fairuzzaki972@gmail.com',
-                        style: TextStyle(
+                      Text(
+                        auth.email ?? 'email@example.com',
+                        style: const TextStyle(
                           fontSize: 13,
                           color: Colors.white70,
                         ),
                       ),
+                      // Tampilkan role user jika admin
+                      if (auth.isAdmin) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Admin',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -275,49 +405,31 @@ class _AccountPageState extends State<AccountPage> {
           Padding(
             padding: const EdgeInsets.only(bottom: 24),
             child: ElevatedButton(
-              onPressed: () {
-                // TODO: Implement logout functionality
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: const Text('Logout'),
-                      content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
-                      actions: [
-                        TextButton(
-                          child: const Text('Batal'),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                        TextButton(
-                          child: const Text('Logout'),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            // Implement actual logout logic here
-                          },
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
+              onPressed: auth.isLoading ? null : _showLogoutDialog,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF4D4D),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: const Text(
-                'Logout',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
+              child: auth.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Logout',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
           )
         ],

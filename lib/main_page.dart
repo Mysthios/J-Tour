@@ -1,3 +1,4 @@
+// 2. PERBAIKAN MAIN PAGE - Gunakan authProvider untuk role
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/pages/homepage/homepage.dart';
@@ -8,6 +9,7 @@ import 'package:j_tour/pages/account/account_page.dart';
 import 'package:j_tour/pages_admin/homepage/homepage.dart';
 import 'package:j_tour/providers/bottom_navbar_provider.dart';
 import 'package:j_tour/providers/search_category_provider.dart';
+import 'package:j_tour/providers/auth_provider.dart'; // TAMBAH INI
 
 class MainPage extends ConsumerWidget {
   const MainPage({super.key});
@@ -15,38 +17,42 @@ class MainPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(bottomNavBarProvider);
-
-    String role = "user"; // Ganti dengan logika untuk mendapatkan role user
+    final authState = ref.watch(authProvider); // TAMBAH INI
+    
+    // Ambil role dari auth state, bukan hardcode
+    final bool isAdmin = authState.isAdmin;
+    
     List<Widget> pages = [];
-    if (role == "admin") {
+    
+    if (isAdmin) {
+      // Pages untuk ADMIN
       pages = [
-        const AdminHomePage(),
-        const SearchPage(),
-        const AccountPage(),
+        const AdminHomePage(), // Tab 1: Admin Dashboard
+        const ExplorePage(),   // Tab 2: Explore (bisa buat AdminExplore jika perlu)
+        const AccountPage(),   // Tab 3: Account
       ];
-    } else if (role == "user") {
+    } else {
+      // Pages untuk USER BIASA
       pages = [
         HomePage(
           onNavigateToSearch: (category) {
             ref.read(searchCategoryProvider.notifier).state = category;
-            ref.read(bottomNavBarProvider.notifier).updateIndex(1); // ke SearchPage
+            ref.read(bottomNavBarProvider.notifier).updateIndex(1);
           },
-        ),
-        const SearchPage(), // Pastikan ini pakai Riverpod
-        const SavedPage(),
-        const AccountPage(),
+        ),                     // Tab 1: User Homepage
+        const ExplorePage(),   // Tab 2: Search/Explore
+        const SavedPage(),     // Tab 3: Saved Places
+        const AccountPage(),   // Tab 4: Account
       ];
-
     }
 
-    // Safety check jika index out of range saat role berubah
+    // Safety check jika index out of range
     final safeIndex = currentIndex >= pages.length ? 0 : currentIndex;
     if (safeIndex != currentIndex) {
-      // Update state index ke 0 agar tidak error
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(bottomNavBarProvider.notifier).updateIndex(0);
       });
-    }    
+    }
 
     return Scaffold(
       body: IndexedStack(
@@ -58,7 +64,7 @@ class MainPage extends ConsumerWidget {
         onTap: (index) {
           ref.read(bottomNavBarProvider.notifier).updateIndex(index);
         },
-        role: role,
+        role: isAdmin ? "admin" : "user", // Pass role ke CustomBottomNavBar
       ),
     );
   }

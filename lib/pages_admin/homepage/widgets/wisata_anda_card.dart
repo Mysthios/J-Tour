@@ -2,9 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
+import 'package:j_tour/pages_admin/place/place_detail_page/place_detail_page.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:j_tour/pages_admin/place/place_detail_page.dart';
 
 class WisataAndaCard extends ConsumerWidget {
   final Place place;
@@ -22,10 +22,9 @@ class WisataAndaCard extends ConsumerWidget {
     String priceText = currencyFormatter.format(place.price);
 
     return Container(
-      width: 330, // Fixed width for horizontal list
-      height: 180, // Adjusted height to match parent SizedBox
-      margin: const EdgeInsets.symmetric(
-          vertical: 4, horizontal: 8), // Reduced margin
+      width: 330,
+      height: 180,
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
@@ -43,60 +42,51 @@ class WisataAndaCard extends ConsumerWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () async {
-            print('=== KELOLA BUTTON DEBUG ===');
-            print('Kelola button clicked: ${place.name}');
-            print('Place ID: ${place.id}');
-            print('=== END KELOLA BUTTON DEBUG ===');
+              print('=== CARD TAP DEBUG ===');
+              print('Card tapped: ${place.name}');
+              print('Place ID: ${place.id}');
+              print('=== END CARD TAP DEBUG ===');
 
-            final latestPlace = await ref.read(placesNotifierProvider.notifier).getPlaceById(place.id);
+              try {
+                final latestPlace = await ref.read(placesProvider.notifier).getPlaceById(place.id);
 
-            if (latestPlace != null) {
-              print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PlaceDetailPage(place: latestPlace),
-                ),
-              );
-            } else {
-              print('DEBUG: Latest place not found for Kelola, using original place data');
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PlaceDetailPage(place: place),
-                ),
-              );
-            }
-          },
-
-
+                if (context.mounted) {
+                  if (latestPlace != null) {
+                    print('DEBUG: Using latest place data: ${latestPlace.name}');
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (context) => PlaceDetailPage(place: latestPlace),
+                    //   ),
+                    // );
+                  } else {
+                    print('DEBUG: Latest place not found, using original place data');
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (context) => PlaceDetailPage(place: place),
+                    //   ),
+                    // );
+                  }
+                }
+              } catch (e) {
+                print('Error fetching latest place data: $e');
+                if (context.mounted) {
+                  // Fallback to original place data
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(
+                  //     builder: (context) => PlaceDetailPage(place: place),
+                  //   ),
+                  // );
+                }
+              }
+            },
             child: Stack(
               children: [
-                // Background Image
+                // Background Image - FIXED VERSION
                 Positioned.fill(
-                  child: place.isLocalImage
-                      ? Image.file(
-                          File(place.image),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image,
-                                  size: 50, color: Colors.grey),
-                            );
-                          },
-                        )
-                      : Image.asset(
-                          place.image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.broken_image,
-                                  size: 50, color: Colors.grey),
-                            );
-                          },
-                        ),
+                  child: _buildImage(),
                 ),
                 // Gradient Overlay (Top to Bottom)
                 Positioned.fill(
@@ -140,7 +130,7 @@ class WisataAndaCard extends ConsumerWidget {
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 22, // Increased font size
+                                      fontSize: 22,
                                       shadows: [
                                         Shadow(
                                             blurRadius: 2.0,
@@ -154,8 +144,7 @@ class WisataAndaCard extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Padding(
-                                  padding: const EdgeInsets.only(
-                                      top: 4.0), // Align with name
+                                  padding: const EdgeInsets.only(top: 4.0),
                                   child: Text(
                                     priceText,
                                     style: const TextStyle(
@@ -228,36 +217,48 @@ class WisataAndaCard extends ConsumerWidget {
                               ],
                             ),
                             ElevatedButton(
-                              onPressed: () {
-                                // Enhanced debug untuk tracking tombol kelola
+                              onPressed: () async {
                                 print('=== KELOLA BUTTON DEBUG ===');
                                 print('Kelola button clicked: ${place.name}');
                                 print('Place ID: ${place.id}');
                                 print('=== END KELOLA BUTTON DEBUG ===');
                                 
-                                // Pastikan kita mendapatkan data terbaru dari provider
-                                final latestPlace = ref.read(placesNotifierProvider.notifier).getPlaceById(place.id);
-                                
-                                if (latestPlace != null) {
-                                  print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PlaceDetailPage(
-                                        place: latestPlace, // Gunakan data terbaru
+                                try {
+                                  final latestPlace = await ref.read(placesProvider.notifier).getPlaceById(place.id);
+                                  
+                                  if (context.mounted) {
+                                    if (latestPlace != null) {
+                                      print('DEBUG: Using latest place data for Kelola: ${latestPlace.name}');
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => PlaceDetail(
+                                            place: latestPlace,
+                                          ),
+                                        ),
+                                      );
+                                    } else {
+                                      print('DEBUG: Latest place not found for Kelola, using original place data');
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => PlaceDetail(
+                                            place: place,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                } catch (e) {
+                                  print('Error in Kelola button: $e');
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Terjadi kesalahan: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
                                       ),
-                                    ),
-                                  );
-                                } else {
-                                  print('DEBUG: Latest place not found for Kelola, using original place data');
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PlaceDetailPage(
-                                        place: place, // Fallback ke data original
-                                      ),
-                                    ),
-                                  );
+                                    );
+                                  }
                                 }
                               },
                               style: ElevatedButton.styleFrom(
@@ -285,8 +286,8 @@ class WisataAndaCard extends ConsumerWidget {
                   ),
                 ),
                 
-                // Debug overlay untuk development (hapus ini di production)
-                if (place.name.toLowerCase().contains('debug')) // Kondisi untuk showing debug info
+                // Debug overlay
+                if (place.name.toLowerCase().contains('debug'))
                   Positioned(
                     top: 8,
                     right: 8,
@@ -312,5 +313,120 @@ class WisataAndaCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  // FIXED: Method untuk membangun widget gambar yang tepat
+  Widget _buildImage() {
+    // Debug print untuk melihat nilai image dan isLocalImage
+    print('=== IMAGE DEBUG ===');
+    print('Image path: ${place.image}');
+    print('Is Local Image: ${place.isLocalImage}');
+    print('=== END IMAGE DEBUG ===');
+
+    // Jika gambar adalah URL (dari API)
+    if (!place.isLocalImage && _isValidUrl(place.image)) {
+      return Image.network(
+        place.image,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: Colors.grey[300],
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print('Network image error: $error');
+          return Container(
+            color: Colors.grey[300],
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                SizedBox(height: 8),
+                Text('Gagal memuat gambar', 
+                  style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          );
+        },
+      );
+    }
+    // Jika gambar adalah file lokal
+    else if (place.isLocalImage && place.image.isNotEmpty) {
+      return Image.file(
+        File(place.image),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          print('File image error: $error');
+          return Container(
+            color: Colors.grey[300],
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                SizedBox(height: 8),
+                Text('File tidak ditemukan', 
+                  style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          );
+        },
+      );
+    }
+    // Jika gambar adalah asset
+    else if (!place.isLocalImage && !_isValidUrl(place.image) && place.image.isNotEmpty) {
+      return Image.asset(
+        place.image,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          print('Asset image error: $error');
+          return Container(
+            color: Colors.grey[300],
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                SizedBox(height: 8),
+                Text('Asset tidak ditemukan', 
+                  style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          );
+        },
+      );
+    }
+    // Default fallback
+    else {
+      return Container(
+        color: Colors.grey[300],
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+            SizedBox(height: 8),
+            Text('Tidak ada gambar', 
+              style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ],
+        ),
+      );
+    }
+  }
+
+  // Helper method untuk validasi URL
+  bool _isValidUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
+    } catch (e) {
+      return false;
+    }
   }
 }

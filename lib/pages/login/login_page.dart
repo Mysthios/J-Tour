@@ -1,82 +1,291 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:j_tour/pages/register/register_page.dart';
-import 'package:j_tour/main_page.dart'; // Import MainPage
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:j_tour/main_page.dart';
+import 'package:j_tour/pages/register/register_page.dart';// Import AdminHomePage
+import 'package:j_tour/pages_admin/homepage/homepage.dart';
+import 'package:j_tour/providers/auth_provider.dart';
+import 'package:j_tour/providers/bottom_navbar_provider.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _forgotPasswordController = TextEditingController();
   bool _passwordVisible = false;
-  bool _isLoading = false; // Tambah loading state
 
   static const Color primaryColor = Color.fromRGBO(0, 111, 185, 1);
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authProvider.notifier).clearError();
+    });
+  }
+
   void _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true; // Tampilkan loading
-      });
+  if (_formKey.currentState!.validate()) {
+    FocusScope.of(context).unfocus();
 
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
+    final authNotifier = ref.read(authProvider.notifier);
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-      // Simulasi delay untuk proses login
-      await Future.delayed(const Duration(seconds: 1));
+    bool success = await authNotifier.loginUser(
+      email: email,
+      password: password,
+    );
 
-      // Simulasi proses login (ganti dengan auth sebenarnya jika diperlukan)
-      if (email == "user@example.com" && password == "password123") {
-        // Login berhasil - navigasi ke MainPage
-        if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const MainPage()),
-            (route) => false, // Hapus semua route sebelumnya
-          );
+    if (!mounted) return;
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Login berhasil!"),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+    if (success) {
+      final authState = ref.read(authProvider);
+      
+      // Reset bottom nav index sebelum navigate
+      ref.read(bottomNavBarProvider.notifier).updateIndex(0);
+      
+      // SEMUA USER (admin dan user biasa) diarahkan ke MainPage
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const MainPage()),
+        (route) => false,
+      );
+      
+      // Pesan berbeda untuk admin dan user
+      if (authState.isAdmin) {
+        _showSnackBar(
+          message: "Login admin berhasil!",
+          backgroundColor: Colors.green,
+          duration: 2,
+        );
       } else {
-        // Login gagal
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Email atau password salah"),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
+        _showSnackBar(
+          message: "Login berhasil!",
+          backgroundColor: Colors.green,
+          duration: 2,
+        );
       }
+    } else {
+      final errorMessage = ref.read(authProvider).errorMessage ??
+          "Gagal login. Periksa email dan password.";
+      _showSnackBar(
+        message: errorMessage,
+        backgroundColor: Colors.red,
+        duration: 3,
+      );
     }
+  }
+}
+
+
+  void _handleForgotPassword() {
+    if (ref.read(authProvider).isLoading) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            "Lupa Password",
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                  "Masukkan email Anda untuk menerima link reset password."),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _forgotPasswordController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: _inputDecoration(
+                  hintText: "Email",
+                  icon: Icons.email_outlined,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Email tidak boleh kosong';
+                  }
+                  final emailRegex = RegExp(
+                      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                  if (!emailRegex.hasMatch(value.trim())) {
+                    return 'Format email tidak valid';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _forgotPasswordController.clear();
+              },
+              child: const Text("Batal"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (_forgotPasswordController.text.trim().isEmpty ||
+                    !RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+                        .hasMatch(_forgotPasswordController.text.trim())) {
+                  _showSnackBar(
+                    message: "Masukkan email yang valid",
+                    backgroundColor: Colors.red,
+                    duration: 2,
+                  );
+                  return;
+                }
+
+                final authNotifier = ref.read(authProvider.notifier);
+                bool success = await authNotifier.forgotPassword(
+                  _forgotPasswordController.text.trim(),
+                );
+
+                if (!mounted) return;
+
+                Navigator.pop(context);
+                _forgotPasswordController.clear();
+
+                if (success) {
+                  _showSnackBar(
+                    message: "Email reset password telah dikirim!",
+                    backgroundColor: Colors.green,
+                    duration: 3,
+                  );
+                } else {
+                  final errorMessage = ref.read(authProvider).errorMessage ??
+                      "Gagal mengirim email reset password.";
+                  _showSnackBar(
+                    message: errorMessage,
+                    backgroundColor: Colors.red,
+                    duration: 3,
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: ref.watch(authProvider).isLoading
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text("Kirim"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSnackBar({
+    required String message,
+    required Color backgroundColor,
+    required int duration,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        duration: Duration(seconds: duration),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  void _navigateToRegister() {
+    if (ref.read(authProvider).isLoading) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const RegisterPage()),
+    );
   }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _forgotPasswordController.dispose();
     super.dispose();
+  }
+
+  InputDecoration _inputDecoration({
+    required String hintText,
+    required IconData icon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: const TextStyle(color: primaryColor),
+      prefixIcon: Icon(icon, color: primaryColor),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: Colors.grey[200],
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: const BorderSide(color: primaryColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: const BorderSide(color: primaryColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: const BorderSide(color: primaryColor, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: BorderSide(color: Colors.grey[400]!),
+      ),
+    );
+  }
+
+  Widget _buildLoadingButton(String text) {
+    return const SizedBox(
+      height: 20,
+      width: 20,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -87,12 +296,11 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
-      resizeToAvoidBottomInset: true, // Penting untuk responsive keyboard
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         top: false,
         child: Stack(
           children: [
-            // Gambar di atas
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.35,
               width: double.infinity,
@@ -113,8 +321,6 @@ class _LoginPageState extends State<LoginPage> {
                 },
               ),
             ),
-
-            // Form scrollable di bawah
             Align(
               alignment: Alignment.bottomCenter,
               child: DraggableScrollableSheet(
@@ -128,7 +334,8 @@ class _LoginPageState extends State<LoginPage> {
                     padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
                     decoration: const BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(32)),
                     ),
                     child: SingleChildScrollView(
                       controller: scrollController,
@@ -160,19 +367,22 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 8),
                             const Text(
                               "Masuk ke akun Anda dan buat liburan Anda lebih mudah dan nyaman",
-                              style: TextStyle(fontSize: 16, color: Colors.black54),
+                              style: TextStyle(
+                                  fontSize: 16, color: Colors.black54),
                             ),
                             const SizedBox(height: 24),
-
-                            // Email Field
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              enabled: !_isLoading,
+                              enabled: !authState.isLoading,
+                              textInputAction: TextInputAction.next,
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
+                                if (value == null || value.trim().isEmpty) {
                                   return 'Email tidak boleh kosong';
-                                } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                                }
+                                final emailRegex = RegExp(
+                                    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                                if (!emailRegex.hasMatch(value.trim())) {
                                   return 'Format email tidak valid';
                                 }
                                 return null;
@@ -183,16 +393,17 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-
-                            // Password Field
                             TextFormField(
                               controller: _passwordController,
                               obscureText: !_passwordVisible,
-                              enabled: !_isLoading,
+                              enabled: !authState.isLoading,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) => _login(),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Password tidak boleh kosong';
-                                } else if (value.length < 6) {
+                                }
+                                if (value.length < 6) {
                                   return 'Password minimal 6 karakter';
                                 }
                                 return null;
@@ -207,113 +418,80 @@ class _LoginPageState extends State<LoginPage> {
                                         : Icons.visibility_off_outlined,
                                     color: primaryColor,
                                   ),
-                                  onPressed: _isLoading
+                                  onPressed: authState.isLoading
                                       ? null
                                       : () {
                                           setState(() {
-                                            _passwordVisible = !_passwordVisible;
+                                            _passwordVisible =
+                                                !_passwordVisible;
                                           });
                                         },
                                 ),
                               ),
                             ),
+                            if (authState.errorMessage != null)
+                              Container(
+                                margin: const EdgeInsets.only(top: 8),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.red[200]!),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.error_outline,
+                                        color: Colors.red[700], size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        authState.errorMessage!,
+                                        style: TextStyle(
+                                          color: Colors.red[700],
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             const SizedBox(height: 24),
-
-                            // Tombol Masuk
                             ElevatedButton(
-                              onPressed: _isLoading ? null : _login,
+                              onPressed: authState.isLoading ? null : _login,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.black,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(30),
                                 ),
                                 disabledBackgroundColor: Colors.grey[400],
+                                elevation: 0,
                               ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
-                                    )
+                              child: authState.isLoading
+                                  ? _buildLoadingButton('Masuk')
                                   : const Text(
                                       'Masuk',
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600),
                                     ),
                             ),
                             const SizedBox(height: 16),
-
-                            const Center(
-                              child: Text(
-                                "atau masuk dengan",
-                                style: TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Tombol Google
-                            OutlinedButton(
-                              onPressed: _isLoading
-                                  ? null
-                                  : () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text("Google Sign In belum diimplementasikan"),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    },
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                side: const BorderSide(color: Colors.black54),
-                                disabledForegroundColor: Colors.grey,
-                                disabledBackgroundColor: Colors.grey[100],
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Image.asset(
-                                    'assets/images/google.png',
-                                    height: 24,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(Icons.g_mobiledata, size: 24);
-                                    },
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    'Masuk dengan Google',
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Daftar dan Lupa Password
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text("Belum punya akun? ", style: TextStyle(color: Colors.black54)),
+                                const Text("Belum punya akun? ",
+                                    style: TextStyle(color: Colors.black54)),
                                 GestureDetector(
-                                  onTap: _isLoading
-                                      ? null
-                                      : () {
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(builder: (context) => const RegisterPage()),
-                                          );
-                                        },
+                                  onTap: _navigateToRegister,
                                   child: Text(
                                     "Daftar",
                                     style: TextStyle(
-                                      color: _isLoading ? Colors.grey : Colors.lightBlueAccent,
+                                      color: authState.isLoading
+                                          ? Colors.grey
+                                          : Colors.lightBlueAccent,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -323,59 +501,24 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 12),
                             Center(
                               child: GestureDetector(
-                                onTap: _isLoading
-                                    ? null
-                                    : () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text("Fitur Lupa Password belum diimplementasikan"),
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                      },
+                                onTap: _handleForgotPassword,
                                 child: Text(
                                   "Lupa Password?",
                                   style: TextStyle(
-                                    color: _isLoading ? Colors.grey : Colors.lightBlueAccent,
+                                    color: authState.isLoading
+                                        ? Colors.grey
+                                        : Colors.lightBlueAccent,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
-
-                            // Info untuk testing
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue[200]!),
-                              ),
-                              child: const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Demo Login:",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blue,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    "Email: user@example.com",
-                                    style: TextStyle(fontSize: 11, color: Colors.blue),
-                                  ),
-                                  Text(
-                                    "Password: password123",
-                                    style: TextStyle(fontSize: 11, color: Colors.blue),
-                                  ),
-                                ],
-                              ),
+                            SizedBox(
+                              height:
+                                  MediaQuery.of(context).viewInsets.bottom > 0
+                                      ? 100
+                                      : 20,
                             ),
-                            SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? 100 : 20),
                           ],
                         ),
                       ),
@@ -386,38 +529,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required String hintText,
-    required IconData icon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: const TextStyle(color: primaryColor),
-      prefixIcon: Icon(icon, color: primaryColor),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: Colors.grey[200],
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: primaryColor),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: primaryColor),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: primaryColor),
-      ),
-      disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30),
-        borderSide: BorderSide(color: Colors.grey[400]!),
       ),
     );
   }
