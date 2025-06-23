@@ -1,9 +1,10 @@
-// pages/place/place_detail_page.dart - REFACTORED VERSION WITH REVIEWS
+// pages/place/place_detail_page.dart - FIXED VERSION
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:j_tour/providers/review_provider.dart';
+import 'package:j_tour/providers/saved_provider.dart'; // Add this import
 import 'package:j_tour/pages/place/reviews_page.dart';
 import 'package:j_tour/pages/place/write_review_page.dart';
 import 'package:j_tour/pages/map/map_page.dart';
@@ -22,11 +23,6 @@ class PlaceDetailPage extends ConsumerStatefulWidget {
     required this.place,
   });
 
-  // const PlaceDetailPage({
-  //   super.key,
-  //   required this.place,
-  // });
-
   @override
   ConsumerState<PlaceDetailPage> createState() => _PlaceDetailPageState();
 }
@@ -43,7 +39,15 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
     // Load reviews when page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadReviews();
+      _initializeUserId();
     });
+  }
+
+  void _initializeUserId() {
+    // Initialize userId - you should get this from your auth provider
+    // For now, using a placeholder - replace with actual auth logic
+    const String currentUserId = 'user123'; // Replace with actual user ID from auth
+    ref.read(userIdProvider.notifier).state = currentUserId;
   }
 
   @override
@@ -103,6 +107,7 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
   @override
   Widget build(BuildContext context) {
     final reviewState = ref.watch(reviewProvider);
+    final userId = ref.watch(userIdProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -111,6 +116,7 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
           UserPlaceImageCarousel(
             key: _imageCarouselKey,
             place: _currentPlace,
+            userId: userId, // Add the required userId parameter
             onBack: () => Navigator.pop(context),
           ),
           Expanded(
@@ -123,6 +129,10 @@ class _PlaceDetailPageState extends ConsumerState<PlaceDetailPage> {
                     onWriteReviewTap: _navigateToWriteReview,
                   ),
                   UserPlaceDescriptionSection(place: _currentPlace),
+                  
+                  // Added spacing between description and facilities
+                  const SizedBox(height: 20),
+                  
                   UserPlaceFacilitiesSection(place: _currentPlace),
                   const SizedBox(height: 24),
                   UserPlaceActionButtons(

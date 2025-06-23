@@ -26,19 +26,36 @@ class PlaceCard extends ConsumerWidget {
       decimalDigits: 0,
     );
 
+    // REACTIVE: Listen ke perubahan state dari provider
+    final placesState = ref.watch(placesProvider);
+    
+    // Cari place dengan ID yang sama dari provider state yang terbaru
+    final currentPlace = placesState.places.where((p) => p.id == place.id).firstOrNull ?? place;
+
+    // Debug print untuk melihat perubahan rating
+    if (currentPlace.rating != place.rating) {
+      print('=== RATING UPDATE DETECTED ===');
+      print('Place: ${currentPlace.name}');
+      print('Original rating: ${place.rating}');
+      print('Updated rating: ${currentPlace.rating}');
+      print('=== END RATING UPDATE ===');
+    }
+
     return GestureDetector(
       onTap: () async {
         print('=== PLACE CARD TAP DEBUG ===');
-        print('Card tapped: ${place.name}');
-        print('Place ID: ${place.id}');
+        print('Card tapped: ${currentPlace.name}');
+        print('Place ID: ${currentPlace.id}');
+        print('Current rating: ${currentPlace.rating}');
         print('=== END PLACE CARD TAP DEBUG ===');
 
         try {
-          final latestPlace = await ref.read(placesProvider.notifier).getPlaceById(place.id);
+          // Gunakan data terbaru dari provider state
+          final latestPlace = ref.read(placesProvider.notifier).getPlaceWithLatestRating(currentPlace.id);
 
           if (context.mounted) {
             if (latestPlace != null) {
-              print('DEBUG: Using latest place data: ${latestPlace.name}');
+              print('DEBUG: Using latest place data: ${latestPlace.name} (Rating: ${latestPlace.rating})');
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -46,11 +63,11 @@ class PlaceCard extends ConsumerWidget {
                 ),
               );
             } else {
-              print('DEBUG: Latest place not found, using original place data');
+              print('DEBUG: Latest place not found, using current place data');
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => PlaceDetailPage(place: place),
+                  builder: (context) => PlaceDetailPage(place: currentPlace),
                 ),
               );
             }
@@ -58,11 +75,11 @@ class PlaceCard extends ConsumerWidget {
         } catch (e) {
           print('Error fetching latest place data: $e');
           if (context.mounted) {
-            // Fallback to original place data
+            // Fallback to current place data
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PlaceDetailPage(place: place),
+                builder: (context) => PlaceDetailPage(place: currentPlace),
               ),
             );
           }
@@ -92,7 +109,7 @@ class PlaceCard extends ConsumerWidget {
               child: Container(
                 width: screenWidth * 0.35,
                 height: cardHeight,
-                child: _buildImage(),
+                child: _buildImage(currentPlace),
               ),
             ),
             
@@ -109,7 +126,7 @@ class PlaceCard extends ConsumerWidget {
                       children: [
                         // Place Name
                         Text(
-                          place.name,
+                          currentPlace.name,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -131,7 +148,7 @@ class PlaceCard extends ConsumerWidget {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                place.location,
+                                currentPlace.location,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],
@@ -144,33 +161,8 @@ class PlaceCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         
-                        // Rating
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.star,
-                              size: 14,
-                              color: Colors.amber[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${place.rating?.toStringAsFixed(1) ?? '0.0'}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            if (place.rating != null && place.rating! > 0)
-                              Text(
-                                ' (${_getRatingText(place.rating!)})',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                          ],
-                        ),
+                        // Rating - REACTIVE: akan update otomatis saat rating berubah
+                        _buildRatingSection(currentPlace),
                       ],
                     ),
                     
@@ -178,9 +170,9 @@ class PlaceCard extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        if (place.price != null && place.price! > 0)
+                        if (currentPlace.price != null && currentPlace.price! > 0)
                           Text(
-                            currencyFormatter.format(place.price!),
+                            currencyFormatter.format(currentPlace.price!),
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -198,7 +190,7 @@ class PlaceCard extends ConsumerWidget {
                           ),
                         
                         // Category Tag (if available)
-                        if (place.category != null && place.category!.isNotEmpty)
+                        if (currentPlace.category != null && currentPlace.category!.isNotEmpty)
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -209,7 +201,7 @@ class PlaceCard extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              place.category!,
+                              currentPlace.category!,
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
@@ -229,17 +221,51 @@ class PlaceCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildImage() {
+  // Separate method untuk rating section dengan animasi
+  Widget _buildRatingSection(Place currentPlace) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: Row(
+        key: ValueKey(currentPlace.rating), // Key untuk trigger animasi
+        children: [
+          Icon(
+            Icons.star,
+            size: 14,
+            color: Colors.amber[600],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${(currentPlace.rating ?? 0.0).toStringAsFixed(1)}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          if (currentPlace.rating != null && currentPlace.rating! > 0)
+            Text(
+              ' (${_getRatingText(currentPlace.rating!)})',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImage(Place currentPlace) {
     // Debug print untuk melihat nilai image dan isLocalImage
     print('=== PLACE CARD IMAGE DEBUG ===');
-    print('Image path: ${place.image}');
-    print('Is Local Image: ${place.isLocalImage}');
+    print('Image path: ${currentPlace.image}');
+    print('Is Local Image: ${currentPlace.isLocalImage}');
     print('=== END PLACE CARD IMAGE DEBUG ===');
 
     // Jika gambar adalah URL (dari API)
-    if (!place.isLocalImage && _isValidUrl(place.image)) {
+    if (!currentPlace.isLocalImage && _isValidUrl(currentPlace.image)) {
       return Image.network(
-        place.image,
+        currentPlace.image,
         fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
@@ -252,9 +278,9 @@ class PlaceCard extends ConsumerWidget {
       );
     }
     // Jika gambar adalah file lokal
-    else if (place.isLocalImage && place.image.isNotEmpty) {
+    else if (currentPlace.isLocalImage && currentPlace.image.isNotEmpty) {
       return Image.file(
-        File(place.image),
+        File(currentPlace.image),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           print('File image error: $error');
@@ -263,9 +289,9 @@ class PlaceCard extends ConsumerWidget {
       );
     }
     // Jika gambar adalah asset
-    else if (!place.isLocalImage && !_isValidUrl(place.image) && place.image.isNotEmpty) {
+    else if (!currentPlace.isLocalImage && !_isValidUrl(currentPlace.image) && currentPlace.image.isNotEmpty) {
       return Image.asset(
-        place.image,
+        currentPlace.image,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           print('Asset image error: $error');
@@ -316,6 +342,7 @@ class PlaceCard extends ConsumerWidget {
   }
 
   String _getRatingText(double rating) {
+    if (rating >= 5.0) return 'Sangat Bagus';
     if (rating >= 4.5) return 'Sangat Baik';
     if (rating >= 4.0) return 'Baik';
     if (rating >= 3.5) return 'Cukup';

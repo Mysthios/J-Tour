@@ -24,22 +24,19 @@ class AutoCarouselPopularPlaces extends ConsumerStatefulWidget {
 }
 
 class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularPlaces>
-    with WidgetsBindingObserver { // Tambahkan WidgetsBindingObserver
+    with WidgetsBindingObserver {
   PageController? _pageController;
   Timer? _timer;
   int _currentIndex = 0;
   bool _isUserInteracting = false;
   bool _isDisposed = false;
   
-  // For infinite scroll - make it nullable and initialize properly
   List<Place>? _infinitePlaces;
-  static const int _multiplier = 10000; // Large number for "infinite" scrolling
+  static const int _multiplier = 10000;
 
   @override
   void initState() {
     super.initState();
-    
-    // Tambahkan observer untuk lifecycle
     WidgetsBinding.instance.addObserver(this);
     
     print('=== CAROUSEL INIT DEBUG ===');
@@ -48,16 +45,13 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
     print('Initial _isUserInteracting: $_isUserInteracting');
     print('===========================');
     
-    // Initialize the infinite places list
     _initializeInfinitePlaces();
     
-    // Initialize PageController only if we have places
     if (widget.places.isNotEmpty && _infinitePlaces != null) {
       _initializePageController();
     }
   }
 
-  // Override untuk mendeteksi app lifecycle changes
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -65,19 +59,16 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
     
     switch (state) {
       case AppLifecycleState.resumed:
-        // App kembali ke foreground, restart auto scroll
         print('App resumed - restarting auto scroll');
         _resetUserInteractionAndRestart();
         break;
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
-        // App tidak aktif, stop auto scroll
         print('App paused/inactive/hidden - stopping auto scroll');
         _stopAutoScroll();
         break;
       case AppLifecycleState.detached:
-        // App akan di-destroy, stop auto scroll
         print('App detached - stopping auto scroll');
         _stopAutoScroll();
         break;
@@ -90,7 +81,6 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
       return;
     }
     
-    // Create infinite list by repeating places
     _infinitePlaces = List.generate(
       widget.places.length * _multiplier, 
       (index) => widget.places[index % widget.places.length]
@@ -104,7 +94,6 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
       return;
     }
     
-    // Start from middle to allow both directions
     final initialPage = (_infinitePlaces!.length / 2).floor();
     
     _pageController = PageController(
@@ -114,9 +103,7 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
     
     _currentIndex = initialPage;
     
-    // Start auto scroll after widget is built with longer delay
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Add additional delay to ensure PageView is fully initialized
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted && !_isDisposed && widget.places.isNotEmpty && _pageController != null) {
           print('POST FRAME CALLBACK: Starting auto scroll');
@@ -131,15 +118,12 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
   void didUpdateWidget(AutoCarouselPopularPlaces oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // Handle places list changes
     if (oldWidget.places != widget.places) {
       print('Places updated, reinitializing...');
       _stopAutoScroll();
       
-      // Reinitialize infinite places
       _initializeInfinitePlaces();
       
-      // Dispose old controller and create new one
       _pageController?.dispose();
       _pageController = null;
       
@@ -152,17 +136,13 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
   @override
   void dispose() {
     print('=== DISPOSING CAROUSEL ===');
-    
-    // Remove observer
     WidgetsBinding.instance.removeObserver(this);
-    
     _isDisposed = true;
     _timer?.cancel();
     _pageController?.dispose();
     super.dispose();
   }
 
-  // Method baru untuk reset user interaction dan restart
   void _resetUserInteractionAndRestart() {
     if (_isDisposed || !mounted) return;
     
@@ -170,7 +150,6 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
       _isUserInteracting = false;
     });
     
-    // Delay sebentar sebelum restart untuk memastikan UI sudah stable
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && !_isDisposed) {
         _startAutoScroll();
@@ -179,7 +158,6 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
   }
 
   void _startAutoScroll() {
-    // Cancel existing timer before starting new one
     _timer?.cancel();
     
     print('=== AUTO SCROLL START ===');
@@ -235,10 +213,8 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
       return;
     }
     
-    // Always move to next page (continuous right movement)
     final nextIndex = _currentIndex + 1;
     
-    // Reset position when getting close to the end to maintain "infinite" feel
     if (nextIndex >= _infinitePlaces!.length - 100) {
       final middleIndex = (_infinitePlaces!.length / 2).floor();
       _pageController!.jumpToPage(middleIndex);
@@ -276,12 +252,11 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
     setState(() {
       _isUserInteracting = true;
     });
-    _stopAutoScroll(); // Stop timer during interaction
+    _stopAutoScroll();
   }
 
   void _onUserInteractionEnd() {
     print('User interaction END - will resume auto scroll in 2 seconds');
-    // Delay before resuming auto scroll
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && !_isDisposed) {
         print('Resuming auto scroll after user interaction');
@@ -295,7 +270,6 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
 
   @override
   Widget build(BuildContext context) {
-    // Early return if no places or not properly initialized
     if (widget.places.isEmpty || _infinitePlaces == null || _pageController == null) {
       return const SizedBox.shrink();
     }
@@ -317,12 +291,10 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
         },
         itemCount: _infinitePlaces!.length,
         itemBuilder: (context, index) {
-          // Safety check
           if (_infinitePlaces == null || index >= _infinitePlaces!.length) {
             return const SizedBox.shrink();
           }
           
-          // Get the actual place from the infinite list
           final place = _infinitePlaces![index];
           
           return GestureDetector(
@@ -344,7 +316,7 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
                     scale: 1.0 - (value.abs() * 0.05),
                     child: PopularPlaceCard(
                       place: place,
-                      onTap: () => _onCardTap(place), // Ganti callback
+                      onTap: () => _onCardTap(place),
                     ),
                   ),
                 );
@@ -356,9 +328,7 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
     );
   }
 
-  // Method terpisah untuk handle card tap
   Future<void> _onCardTap(Place place) async {
-    // Set user interaction
     _onUserInteractionStart();
     
     print('=== POPULAR CARD TAP DEBUG ===');
@@ -374,7 +344,6 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
         
         print('DEBUG: Navigating with place: ${placeToNavigate.name}');
         
-        // Navigate dan tunggu sampai kembali
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
@@ -382,13 +351,10 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
           ),
         );
         
-        // Setelah kembali dari navigasi, reset state dan restart auto scroll
         print('=== RETURNED FROM NAVIGATION ===');
         print('Navigation result: $result');
         
-        // Reset user interaction dan restart auto scroll
         _resetUserInteractionAndRestart();
-        
       }
     } catch (e) {
       print('Error fetching latest place data: $e');
@@ -403,14 +369,13 @@ class _AutoCarouselPopularPlacesState extends ConsumerState<AutoCarouselPopularP
         print('=== RETURNED FROM NAVIGATION (ERROR CASE) ===');
         print('Navigation result: $result');
         
-        // Reset user interaction dan restart auto scroll
         _resetUserInteractionAndRestart();
       }
     }
   }
 }
 
-// PopularPlaceCard class dengan sedikit modifikasi...
+// SOLUSI 1: Menggunakan Consumer untuk setiap card
 class PopularPlaceCard extends ConsumerWidget {
   final Place place;
   final VoidCallback? onTap;
@@ -423,6 +388,20 @@ class PopularPlaceCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // KUNCI: Watch provider untuk mendapatkan data terbaru
+    final placesState = ref.watch(placesProvider);
+
+    // Cari place yang sama dengan ID yang sama dari state terbaru
+    Place currentPlace = place;
+    if (placesState is AsyncData<List<Place>>) {
+      final places = (placesState as AsyncData<List<Place>>).value;
+      final updatedPlace = places.firstWhere(
+        (p) => p.id == place.id,
+        orElse: () => place,
+      );
+      currentPlace = updatedPlace;
+    }
+
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final cardWidth = screenWidth * 0.8;
@@ -435,7 +414,7 @@ class PopularPlaceCard extends ConsumerWidget {
     );
 
     return GestureDetector(
-      onTap: onTap, // Langsung panggil callback yang diberikan
+      onTap: onTap,
       child: Container(
         width: cardWidth,
         height: cardHeight,
@@ -455,7 +434,7 @@ class PopularPlaceCard extends ConsumerWidget {
           child: Stack(
             children: [
               Positioned.fill(
-                child: _buildImage(),
+                child: _buildImage(currentPlace),
               ),
               
               Positioned.fill(
@@ -475,6 +454,7 @@ class PopularPlaceCard extends ConsumerWidget {
                 ),
               ),
               
+              // Rating yang akan update secara real-time
               Positioned(
                 top: 16,
                 right: 16,
@@ -501,7 +481,7 @@ class PopularPlaceCard extends ConsumerWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${place.rating?.toStringAsFixed(1) ?? '0.0'}',
+                        '${currentPlace.rating?.toStringAsFixed(1) ?? '0.0'}',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -513,7 +493,7 @@ class PopularPlaceCard extends ConsumerWidget {
                 ),
               ),
               
-              if (place.category != null && place.category!.isNotEmpty)
+              if (currentPlace.category != null && currentPlace.category!.isNotEmpty)
                 Positioned(
                   top: 16,
                   left: 16,
@@ -524,7 +504,7 @@ class PopularPlaceCard extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      place.category!,
+                      currentPlace.category!,
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -545,7 +525,7 @@ class PopularPlaceCard extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        place.name,
+                        currentPlace.name,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -573,7 +553,7 @@ class PopularPlaceCard extends ConsumerWidget {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              place.location,
+                              currentPlace.location,
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.white.withOpacity(0.9),
@@ -596,7 +576,7 @@ class PopularPlaceCard extends ConsumerWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          if (place.price != null && place.price! > 0)
+                          if (currentPlace.price != null && currentPlace.price! > 0)
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -610,7 +590,7 @@ class PopularPlaceCard extends ConsumerWidget {
                                 ),
                               ),
                               child: Text(
-                                currencyFormatter.format(place.price!),
+                                currencyFormatter.format(currentPlace.price!),
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -680,15 +660,15 @@ class PopularPlaceCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildImage(Place currentPlace) {
     print('=== POPULAR CARD IMAGE DEBUG ===');
-    print('Image path: ${place.image}');
-    print('Is Local Image: ${place.isLocalImage}');
+    print('Image path: ${currentPlace.image}');
+    print('Is Local Image: ${currentPlace.isLocalImage}');
     print('=== END POPULAR CARD IMAGE DEBUG ===');
 
-    if (!place.isLocalImage && _isValidUrl(place.image)) {
+    if (!currentPlace.isLocalImage && _isValidUrl(currentPlace.image)) {
       return Image.network(
-        place.image,
+        currentPlace.image,
         fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
@@ -700,9 +680,9 @@ class PopularPlaceCard extends ConsumerWidget {
         },
       );
     }
-    else if (place.isLocalImage && place.image.isNotEmpty) {
+    else if (currentPlace.isLocalImage && currentPlace.image.isNotEmpty) {
       return Image.file(
-        File(place.image),
+        File(currentPlace.image),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           print('File image error: $error');
@@ -710,9 +690,9 @@ class PopularPlaceCard extends ConsumerWidget {
         },
       );
     }
-    else if (!place.isLocalImage && !_isValidUrl(place.image) && place.image.isNotEmpty) {
+    else if (!currentPlace.isLocalImage && !_isValidUrl(currentPlace.image) && currentPlace.image.isNotEmpty) {
       return Image.asset(
-        place.image,
+        currentPlace.image,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           print('Asset image error: $error');

@@ -167,7 +167,7 @@ class Place {
       id: json['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: json['name'] ?? '',
       location: json['location'] ?? '',
-      rating: parseDouble(json['rating']) ?? 4.5,
+      rating: parseDouble(json['rating']) ?? 0.0,
       price: mainPrice,
       image: mainImage,
       isLocalImage: json['isLocalImage'] ?? false,

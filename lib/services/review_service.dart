@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/review_model.dart';
 
-const String baseUrl = 'http://10.132.12.217:3000/api';
+const String baseUrl = 'http://192.168.0.5:3000/api';
 
 class ReviewService {
 

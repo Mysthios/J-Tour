@@ -45,33 +45,33 @@ class UserPlaceInfoCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 5),
 
           // Rating and Write Review Button
           Row(
             children: [
               // Display basic rating info (static)
-              Row(
-                children: [
-                  const Icon(Icons.star, color: Colors.orange, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    "${place.rating?.toStringAsFixed(1) ?? '0.0'}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                  Text(
-                    " (Rating tempat)",
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
+              // Row(
+              //   children: [
+              //     const Icon(Icons.star, color: Colors.orange, size: 16),
+              //     const SizedBox(width: 4),
+              //     Text(
+              //       "${place.rating?.toStringAsFixed(1) ?? '0.0'}",
+              //       style: const TextStyle(
+              //         fontWeight: FontWeight.w600,
+              //         fontSize: 13,
+              //       ),
+              //     ),
+              //     Text(
+              //       " (Rating tempat)",
+              //       style: TextStyle(
+              //         color: Colors.grey[600],
+              //         fontSize: 12,
+              //       ),
+              //     ),
+              //   ],
+              // ),
+              // const Spacer(),
               // Write Review Button
               // ElevatedButton.icon(
               //   onPressed: onWriteReviewTap,
