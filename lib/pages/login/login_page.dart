@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/main_page.dart';
-import 'package:j_tour/pages/register/register_page.dart';// Import AdminHomePage
+import 'package:j_tour/pages/register/register_page.dart'; // Import AdminHomePage
 import 'package:j_tour/pages_admin/homepage/homepage.dart';
 import 'package:j_tour/providers/auth_provider.dart';
 import 'package:j_tour/providers/bottom_navbar_provider.dart';
@@ -32,59 +32,58 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _login() async {
-  if (_formKey.currentState!.validate()) {
-    FocusScope.of(context).unfocus();
+    if (_formKey.currentState!.validate()) {
+      FocusScope.of(context).unfocus();
 
-    final authNotifier = ref.read(authProvider.notifier);
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+      final authNotifier = ref.read(authProvider.notifier);
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
 
-    bool success = await authNotifier.loginUser(
-      email: email,
-      password: password,
-    );
-
-    if (!mounted) return;
-
-    if (success) {
-      final authState = ref.read(authProvider);
-      
-      // Reset bottom nav index sebelum navigate
-      ref.read(bottomNavBarProvider.notifier).updateIndex(0);
-      
-      // SEMUA USER (admin dan user biasa) diarahkan ke MainPage
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const MainPage()),
-        (route) => false,
+      bool success = await authNotifier.loginUser(
+        email: email,
+        password: password,
       );
-      
-      // Pesan berbeda untuk admin dan user
-      if (authState.isAdmin) {
-        _showSnackBar(
-          message: "Login admin berhasil!",
-          backgroundColor: Colors.green,
-          duration: 2,
+
+      if (!mounted) return;
+
+      if (success) {
+        final authState = ref.read(authProvider);
+
+        // Reset bottom nav index sebelum navigate
+        ref.read(bottomNavBarProvider.notifier).updateIndex(0);
+
+        // SEMUA USER (admin dan user biasa) diarahkan ke MainPage
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MainPage()),
+          (route) => false,
         );
+
+        // Pesan berbeda untuk admin dan user
+        if (authState.isAdmin) {
+          _showSnackBar(
+            message: "Login admin berhasil!",
+            backgroundColor: Colors.green,
+            duration: 2,
+          );
+        } else {
+          _showSnackBar(
+            message: "Login berhasil!",
+            backgroundColor: Colors.green,
+            duration: 2,
+          );
+        }
       } else {
+        final errorMessage = ref.read(authProvider).errorMessage ??
+            "Gagal login. Periksa email dan password.";
         _showSnackBar(
-          message: "Login berhasil!",
-          backgroundColor: Colors.green,
-          duration: 2,
+          message: errorMessage,
+          backgroundColor: Colors.red,
+          duration: 3,
         );
       }
-    } else {
-      final errorMessage = ref.read(authProvider).errorMessage ??
-          "Gagal login. Periksa email dan password.";
-      _showSnackBar(
-        message: errorMessage,
-        backgroundColor: Colors.red,
-        duration: 3,
-      );
     }
   }
-}
-
 
   void _handleForgotPassword() {
     if (ref.read(authProvider).isLoading) return;
@@ -93,105 +92,182 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            "Lupa Password",
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                  "Masukkan email Anda untuk menerima link reset password."),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _forgotPasswordController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: _inputDecoration(
-                  hintText: "Email",
-                  icon: Icons.email_outlined,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              title: const Text(
+                "Lupa Password",
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Masukkan email Anda untuk menerima link reset password.",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _forgotPasswordController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: _inputDecoration(
+                      hintText: "Email",
+                      icon: Icons.email_outlined,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Email tidak boleh kosong';
+                      }
+                      final emailRegex = RegExp(
+                          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                      if (!emailRegex.hasMatch(value.trim())) {
+                        return 'Format email tidak valid';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            color: Colors.blue[700], size: 20),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            "Periksa folder spam jika email tidak diterima dalam 5 menit.",
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _forgotPasswordController.clear();
+                  },
+                  child: const Text("Batal"),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Email tidak boleh kosong';
-                  }
-                  final emailRegex = RegExp(
-                      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-                  if (!emailRegex.hasMatch(value.trim())) {
-                    return 'Format email tidak valid';
-                  }
-                  return null;
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _forgotPasswordController.clear();
-              },
-              child: const Text("Batal"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (_forgotPasswordController.text.trim().isEmpty ||
-                    !RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-                        .hasMatch(_forgotPasswordController.text.trim())) {
-                  _showSnackBar(
-                    message: "Masukkan email yang valid",
-                    backgroundColor: Colors.red,
-                    duration: 2,
-                  );
-                  return;
-                }
+                Consumer(
+                  builder: (context, ref, child) {
+                    final authState = ref.watch(authProvider);
+                    return ElevatedButton(
+                      onPressed: authState.isLoading
+                          ? null
+                          : () async {
+                              if (_forgotPasswordController.text
+                                      .trim()
+                                      .isEmpty ||
+                                  !RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+                                      .hasMatch(_forgotPasswordController.text
+                                          .trim())) {
+                                _showSnackBar(
+                                  message: "Masukkan email yang valid",
+                                  backgroundColor: Colors.red,
+                                  duration: 2,
+                                );
+                                return;
+                              }
 
-                final authNotifier = ref.read(authProvider.notifier);
-                bool success = await authNotifier.forgotPassword(
-                  _forgotPasswordController.text.trim(),
-                );
+                              final authNotifier =
+                                  ref.read(authProvider.notifier);
+                              bool success = await authNotifier.forgotPassword(
+                                _forgotPasswordController.text.trim(),
+                              );
 
-                if (!mounted) return;
+                              if (!mounted) return;
 
-                Navigator.pop(context);
-                _forgotPasswordController.clear();
+                              Navigator.pop(context);
+                              _forgotPasswordController.clear();
 
-                if (success) {
-                  _showSnackBar(
-                    message: "Email reset password telah dikirim!",
-                    backgroundColor: Colors.green,
-                    duration: 3,
-                  );
-                } else {
-                  final errorMessage = ref.read(authProvider).errorMessage ??
-                      "Gagal mengirim email reset password.";
-                  _showSnackBar(
-                    message: errorMessage,
-                    backgroundColor: Colors.red,
-                    duration: 3,
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-              ),
-              child: ref.watch(authProvider).isLoading
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              if (success) {
+                                _showSuccessDialog();
+                              } else {
+                                final errorMessage =
+                                    ref.read(authProvider).errorMessage ??
+                                        "Gagal mengirim email reset password.";
+                                _showSnackBar(
+                                  message: errorMessage,
+                                  backgroundColor: Colors.red,
+                                  duration: 3,
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
                       ),
-                    )
-                  : const Text("Kirim"),
-            ),
-          ],
+                      child: authState.isLoading
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text("Kirim"),
+                    );
+                  },
+                ),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          "Email Terkirim!",
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.mark_email_read_outlined,
+              size: 64,
+              color: Colors.green[600],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Link reset password telah dikirim ke email Anda. Silakan periksa email dan ikuti instruksi untuk mereset password.",
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Mengerti"),
+          ),
+        ],
+      ),
     );
   }
 

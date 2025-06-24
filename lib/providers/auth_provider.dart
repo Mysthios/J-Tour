@@ -190,7 +190,6 @@ String get userRoleString => _userRole?.toString().split('.').last ?? 'unknown';
     }
   }
 
-  // Forgot Password
   Future<bool> forgotPassword(String email) async {
     try {
       _setLoading(true);
@@ -203,9 +202,14 @@ String get userRoleString => _userRole?.toString().split('.').last ?? 'unknown';
       } else {
         String errorMessage = result['message']?.toString() ??
             'Gagal mengirim email reset password';
-        if (result['error'] == 'UNAUTHORIZED_CONTINUE_URI') {
+        
+        // Handle specific error cases
+        if (result['error'] == 'USER_NOT_FOUND') {
+          errorMessage = 'Email tidak terdaftar dalam sistem';
+        } else if (result['error'] == 'UNAUTHORIZED_CONTINUE_URI') {
           errorMessage = 'Konfigurasi server salah. Hubungi admin.';
         }
+        
         _setError(errorMessage);
         return false;
       }
@@ -215,6 +219,191 @@ String get userRoleString => _userRole?.toString().split('.').last ?? 'unknown';
     } finally {
       _setLoading(false);
     }
+  }
+
+// TAMBAHKAN method-method baru ini setelah method forgotPassword:
+
+  // Verify Password Reset Code
+  Future<Map<String, dynamic>?> verifyPasswordResetCode(String oobCode) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final result = await _authService.verifyPasswordResetCode(oobCode);
+
+      if (result['success'] == true) {
+        return {
+          'success': true,
+          'email': result['data']?['email'],
+          'message': result['message']
+        };
+      } else {
+        String errorMessage = result['message']?.toString() ?? 'Kode reset tidak valid';
+        
+        // Handle specific error cases
+        if (result['error'] == 'INVALID_OOB_CODE') {
+          errorMessage = 'Kode reset tidak valid';
+        } else if (result['error'] == 'EXPIRED_OOB_CODE') {
+          errorMessage = 'Kode reset sudah kedaluwarsa. Silakan minta reset password baru.';
+        }
+        
+        _setError(errorMessage);
+        return {
+          'success': false,
+          'message': errorMessage
+        };
+      }
+    } catch (e) {
+      _setError('Gagal memverifikasi kode reset: ${e.toString()}');
+      return {
+        'success': false,
+        'message': 'Gagal memverifikasi kode reset: ${e.toString()}'
+      };
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Confirm Password Reset
+  Future<bool> confirmPasswordReset({
+    required String oobCode,
+    required String newPassword,
+  }) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final result = await _authService.confirmPasswordReset(
+        oobCode: oobCode,
+        newPassword: newPassword,
+      );
+
+      if (result['success'] == true) {
+        return true;
+      } else {
+        String errorMessage = result['message']?.toString() ?? 'Gagal mereset password';
+        
+        // Handle specific error cases
+        if (result['error'] == 'INVALID_OOB_CODE') {
+          errorMessage = 'Kode reset tidak valid atau sudah kedaluwarsa';
+        } else if (result['error'] == 'EXPIRED_OOB_CODE') {
+          errorMessage = 'Kode reset sudah kedaluwarsa. Silakan minta reset password baru.';
+        } else if (result['error'] == 'WEAK_PASSWORD') {
+          errorMessage = 'Password terlalu lemah. Gunakan kombinasi huruf, angka, dan simbol.';
+        }
+        
+        _setError(errorMessage);
+        return false;
+      }
+    } catch (e) {
+      _setError('Gagal mereset password: ${e.toString()}');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Handle Password Reset Deep Link
+  Future<Map<String, dynamic>?> handlePasswordResetDeepLink(String deepLink) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final result = await _authService.handlePasswordResetDeepLink(deepLink);
+
+      if (result['success'] == true) {
+        return {
+          'success': true,
+          'oobCode': result['data']?['oobCode'],
+          'email': result['data']?['email'],
+          'message': result['message']
+        };
+      } else {
+        String errorMessage = result['message']?.toString() ?? 'Link reset password tidak valid';
+        _setError(errorMessage);
+        return {
+          'success': false,
+          'message': errorMessage
+        };
+      }
+    } catch (e) {
+      _setError('Gagal memproses link reset password: ${e.toString()}');
+      return {
+        'success': false,
+        'message': 'Gagal memproses link reset password: ${e.toString()}'
+      };
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Extract OOB Code from URL (utility method)
+  String? extractOobCodeFromUrl(String url) {
+    return _authService.extractOobCodeFromUrl(url);
+  }
+
+  // Validate password strength (utility method)
+  Map<String, dynamic> validatePasswordStrength(String password) {
+    bool hasMinLength = password.length >= 8;
+    bool hasUppercase = password.contains(RegExp(r'[A-Z]'));
+    bool hasLowercase = password.contains(RegExp(r'[a-z]'));
+    bool hasNumbers = password.contains(RegExp(r'[0-9]'));
+    bool hasSpecialCharacters = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    
+    int strength = 0;
+    if (hasMinLength) strength++;
+    if (hasUppercase) strength++;
+    if (hasLowercase) strength++;
+    if (hasNumbers) strength++;
+    if (hasSpecialCharacters) strength++;
+    
+    String strengthText = '';
+    Color strengthColor = Colors.red;
+    
+    switch (strength) {
+      case 0:
+      case 1:
+        strengthText = 'Sangat Lemah';
+        strengthColor = Colors.red;
+        break;
+      case 2:
+        strengthText = 'Lemah';
+        strengthColor = Colors.orange;
+        break;
+      case 3:
+        strengthText = 'Sedang';
+        strengthColor = Colors.yellow;
+        break;
+      case 4:
+        strengthText = 'Kuat';
+        strengthColor = Colors.blue;
+        break;
+      case 5:
+        strengthText = 'Sangat Kuat';
+        strengthColor = Colors.green;
+        break;
+    }
+    
+    return {
+      'isValid': strength >= 3,
+      'strength': strength,
+      'strengthText': strengthText,
+      'strengthColor': strengthColor,
+      'requirements': {
+        'minLength': hasMinLength,
+        'uppercase': hasUppercase,
+        'lowercase': hasLowercase,
+        'numbers': hasNumbers,
+        'specialCharacters': hasSpecialCharacters,
+      },
+      'messages': [
+        if (!hasMinLength) 'Minimal 8 karakter',
+        if (!hasUppercase) 'Minimal 1 huruf besar',
+        if (!hasLowercase) 'Minimal 1 huruf kecil',
+        if (!hasNumbers) 'Minimal 1 angka',
+        if (!hasSpecialCharacters) 'Minimal 1 karakter khusus (!@#\$%^&*)',
+      ],
+    };
   }
 
   // Admin login - gunakan endpoint admin yang baru

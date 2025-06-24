@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://10.132.12.217:3000/api/auth';
+  static const String baseUrl = 'http://10.132.1.22:3000/api/auth';
 
   // Private variables for tracking refresh state
   static bool _isRefreshing = false;
@@ -289,7 +289,7 @@ class AuthService {
     }
   }
 
-  // Forgot Password
+  // Forgot Password - Request reset link
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final response = await http.post(
@@ -312,19 +312,165 @@ class AuthService {
       } else {
         String errorMessage = data['message']?.toString() ??
             'Gagal mengirim email reset password';
-        if (data['error'] == 'UNAUTHORIZED_CONTINUE_URI') {
+
+        // Handle specific error cases
+        if (data['error'] == 'USER_NOT_FOUND') {
+          errorMessage = 'Email tidak terdaftar';
+        } else if (data['error'] == 'UNAUTHORIZED_CONTINUE_URI') {
           errorMessage = 'Konfigurasi server salah. Hubungi admin.';
         }
+
         return {
           'success': false,
           'message': errorMessage,
           'errors': data['errors'],
+          'error': data['error'],
         };
       }
     } catch (e) {
       return {
         'success': false,
         'message': 'Gagal mengirim email reset password: ${e.toString()}',
+      };
+    }
+  }
+
+// Verify Password Reset Code - Optional untuk validasi kode sebelum reset
+  Future<Map<String, dynamic>> verifyPasswordResetCode(String oobCode) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/verify-reset-code'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'oobCode': oobCode,
+        }),
+      );
+
+      final data = _safeCastToStringMap(jsonDecode(response.body));
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message']?.toString() ?? 'Kode reset valid',
+          'data': _safeCastToStringMap(data['data']),
+        };
+      } else {
+        String errorMessage =
+            data['message']?.toString() ?? 'Kode reset tidak valid';
+
+        // Handle specific error cases
+        if (data['error'] == 'INVALID_OOB_CODE') {
+          errorMessage = 'Kode reset tidak valid';
+        } else if (data['error'] == 'EXPIRED_OOB_CODE') {
+          errorMessage = 'Kode reset sudah kedaluwarsa';
+        }
+
+        return {
+          'success': false,
+          'message': errorMessage,
+          'error': data['error'],
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Gagal memverifikasi kode reset: ${e.toString()}',
+      };
+    }
+  }
+
+// Confirm Password Reset - Reset password dengan kode OOB dan password baru
+  Future<Map<String, dynamic>> confirmPasswordReset({
+    required String oobCode,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/confirm-password-reset'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'oobCode': oobCode,
+          'newPassword': newPassword,
+        }),
+      );
+
+      final data = _safeCastToStringMap(jsonDecode(response.body));
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message']?.toString() ?? 'Password berhasil direset',
+          'data': _safeCastToStringMap(data['data']),
+        };
+      } else {
+        String errorMessage =
+            data['message']?.toString() ?? 'Gagal mereset password';
+
+        // Handle specific error cases
+        if (data['error'] == 'INVALID_OOB_CODE') {
+          errorMessage = 'Kode reset tidak valid atau sudah kedaluwarsa';
+        } else if (data['error'] == 'EXPIRED_OOB_CODE') {
+          errorMessage = 'Kode reset sudah kedaluwarsa';
+        } else if (data['error'] == 'WEAK_PASSWORD') {
+          errorMessage = 'Password terlalu lemah';
+        }
+
+        return {
+          'success': false,
+          'message': errorMessage,
+          'error': data['error'],
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Gagal mereset password: ${e.toString()}',
+      };
+    }
+  }
+
+// Helper method untuk extract oobCode dari deep link atau URL
+  String? extractOobCodeFromUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return uri.queryParameters['oobCode'];
+    } catch (e) {
+      return null;
+    }
+  }
+
+// Method untuk handle deep link reset password (jika menggunakan deep linking)
+  Future<Map<String, dynamic>> handlePasswordResetDeepLink(
+      String deepLink) async {
+    try {
+      final oobCode = extractOobCodeFromUrl(deepLink);
+
+      if (oobCode == null) {
+        return {
+          'success': false,
+          'message': 'Link reset password tidak valid',
+        };
+      }
+
+      // Verify kode terlebih dahulu
+      final verifyResult = await verifyPasswordResetCode(oobCode);
+
+      if (verifyResult['success'] == true) {
+        return {
+          'success': true,
+          'message': 'Link reset password valid',
+          'data': {
+            'oobCode': oobCode,
+            'email': verifyResult['data']?['email'],
+          },
+        };
+      } else {
+        return verifyResult;
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Gagal memproses link reset password: ${e.toString()}',
       };
     }
   }

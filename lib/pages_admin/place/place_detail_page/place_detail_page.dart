@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:j_tour/pages/map/map_page.dart';
-import 'package:j_tour/pages/place/reviews_page.dart';
+import 'package:j_tour/pages/place/review%20page/reviews_page.dart';
 import 'package:j_tour/pages_admin/place/edit_place/edit_place_page.dart';
 import 'widgets/place_image_carousel.dart';
 import 'widgets/place_info_card.dart';

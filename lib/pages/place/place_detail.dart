@@ -4,15 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
 import 'package:j_tour/providers/place_provider.dart';
 import 'package:j_tour/providers/review_provider.dart';
-import 'package:j_tour/pages/place/reviews_page.dart';
-import 'package:j_tour/pages/place/write_review_page.dart';
+import 'package:j_tour/pages/place/review%20page/reviews_page.dart';
+import 'package:j_tour/pages/place/review%20page/write_review_page.dart';
 import 'package:j_tour/pages/map/map_page.dart';
 import 'widgets/user_place_image_carousel.dart';
 import 'widgets/user_place_info_card.dart';
 import 'widgets/user_place_description_section.dart';
 import 'widgets/user_place_facilities_section.dart';
 import 'widgets/user_place_action_buttons.dart';
-import 'package:j_tour/pages/place/user_place_reviews_section.dart';
+import 'package:j_tour/pages/place/review%20page/user_place_reviews_section.dart';
 
 class PlaceDetailPage extends ConsumerStatefulWidget {
   final Place place;

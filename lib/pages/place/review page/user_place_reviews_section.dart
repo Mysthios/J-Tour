@@ -1,9 +1,12 @@
 // widgets/user_place_reviews_section.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
 import 'package:j_tour/models/review_model.dart';
+import 'package:j_tour/pages/place/review%20page/widgets/review_action_dialog.dart';
+import 'package:j_tour/providers/auth_provider.dart';
 
-class UserPlaceReviewsSection extends StatelessWidget {
+class UserPlaceReviewsSection extends ConsumerWidget {
   final Place place;
   final List<Review> reviews;
   final double averageRating;
@@ -24,7 +27,10 @@ class UserPlaceReviewsSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authProvider);
+    final currentUserId = auth.uid;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -150,35 +156,37 @@ class UserPlaceReviewsSection extends StatelessWidget {
               ),
             ),
             
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
           ],
           
           // Write Review Button
-          SizedBox(
+          Container(
             width: double.infinity,
-            child: OutlinedButton.icon(
+            margin: const EdgeInsets.only(bottom: 20),
+            child: ElevatedButton.icon(
               onPressed: onWriteReview,
-              icon: const Icon(Icons.edit, size: 20),
+              icon: const Icon(Icons.edit, size: 18),
               label: const Text('Tulis Ulasan'),
-              style: OutlinedButton.styleFrom(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                side: const BorderSide(color: Colors.blue),
-                foregroundColor: Colors.blue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
           
-          const SizedBox(height: 20),
-          
           // Reviews List
-          if (isLoading)
+          if (isLoading) ...[
             const Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: EdgeInsets.all(20.0),
                 child: CircularProgressIndicator(),
               ),
-            )
-          else if (reviews.isEmpty)
+            ),
+          ] else if (reviews.isEmpty) ...[
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(32),
@@ -194,16 +202,16 @@ class UserPlaceReviewsSection extends StatelessWidget {
                     size: 48,
                     color: Colors.grey[400],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Text(
-                    'Belum Ada Ulasan',
+                    'Belum ada ulasan',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Colors.grey[600],
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
                     'Jadilah yang pertama memberikan ulasan untuk tempat ini',
                     style: TextStyle(
@@ -214,45 +222,55 @@ class UserPlaceReviewsSection extends StatelessWidget {
                   ),
                 ],
               ),
-            )
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Ulasan Terbaru',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...reviews.take(3).map((review) => _buildReviewItem(review)),
-                if (reviews.length > 3)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Center(
-                      child: TextButton(
-                        onPressed: onSeeAllReviews,
-                        child: Text(
-                          'Lihat ${reviews.length - 3} Ulasan Lainnya',
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+            ),
+          ] else ...[
+            // Recent Reviews
+            const Text(
+              'Ulasan Terbaru',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            ...reviews.take(3).map((review) => _buildReviewCard(
+              context, 
+              ref, 
+              review, 
+              currentUserId,
+            )).toList(),
+            
+            if (reviews.length > 3) ...[
+              const SizedBox(height: 16),
+              Center(
+                child: TextButton(
+                  onPressed: onSeeAllReviews,
+                  child: Text(
+                    'Lihat ${reviews.length - 3} ulasan lainnya',
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-              ],
-            ),
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildReviewItem(Review review) {
+  Widget _buildReviewCard(
+    BuildContext context, 
+    WidgetRef ref, 
+    Review review, 
+    String? currentUserId,
+  ) {
+    final isCurrentUser = currentUserId == review.userId;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -260,11 +278,18 @@ class UserPlaceReviewsSection extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User Info and Rating
+          // User info and rating
           Row(
             children: [
               CircleAvatar(
@@ -273,8 +298,8 @@ class UserPlaceReviewsSection extends StatelessWidget {
                 child: Text(
                   review.userName.isNotEmpty ? review.userName[0].toUpperCase() : 'U',
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
                     color: Colors.blue,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
@@ -283,23 +308,53 @@ class UserPlaceReviewsSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      review.userName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
                     Row(
                       children: [
-                        ...List.generate(5, (index) {
-                          return Icon(
-                            index < review.rating ? Icons.star : Icons.star_border,
-                            size: 16,
-                            color: Colors.amber,
-                          );
-                        }),
+                        Expanded(
+                          child: Text(
+                            review.userName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isCurrentUser)
+                          GestureDetector(
+                            onTap: () => ReviewActionsDialog.show(
+                              context: context,
+                              ref: ref,
+                              review: review,
+                              place: place,
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Icon(
+                                Icons.more_horiz,
+                                size: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Row(
+                          children: List.generate(5, (index) {
+                            return Icon(
+                              index < review.rating ? Icons.star : Icons.star_outline,
+                              color: Colors.amber,
+                              size: 16,
+                            );
+                          }),
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           _formatDate(review.createdAt),
@@ -316,7 +371,7 @@ class UserPlaceReviewsSection extends StatelessWidget {
             ],
           ),
           
-          // Review Comment
+          // Review comment
           if (review.comment != null && review.comment!.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(
@@ -329,7 +384,7 @@ class UserPlaceReviewsSection extends StatelessWidget {
             ),
           ],
           
-          // Review Images
+          // Review images
           if (review.images != null && review.images!.isNotEmpty) ...[
             const SizedBox(height: 12),
             SizedBox(
@@ -338,13 +393,12 @@ class UserPlaceReviewsSection extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 itemCount: review.images!.length,
                 itemBuilder: (context, index) {
-                  final image = review.images![index];
                   return Container(
                     margin: const EdgeInsets.only(right: 8),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        image.url,
+                        review.images![index].url,
                         width: 80,
                         height: 80,
                         fit: BoxFit.cover,
@@ -375,7 +429,7 @@ class UserPlaceReviewsSection extends StatelessWidget {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-
+    
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
         return '${difference.inMinutes} menit yang lalu';
@@ -385,8 +439,10 @@ class UserPlaceReviewsSection extends StatelessWidget {
       return '${difference.inDays} hari yang lalu';
     } else if (difference.inDays < 30) {
       return '${(difference.inDays / 7).floor()} minggu yang lalu';
+    } else if (difference.inDays < 365) {
+      return '${(difference.inDays / 30).floor()} bulan yang lalu';
     } else {
-      return '${date.day}/${date.month}/${date.year}';
+      return '${(difference.inDays / 365).floor()} tahun yang lalu';
     }
   }
 }

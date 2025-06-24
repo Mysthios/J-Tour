@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:j_tour/pages/account/ganti_password.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:j_tour/providers/auth_provider.dart';
 import 'dart:io';
@@ -47,10 +46,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     _nameController.dispose();
     _emailController.dispose();
     super.dispose();
-  }
-
-  bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
   // Fungsi untuk menampilkan dialog pilihan kamera atau gallery
@@ -191,22 +186,19 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   bool _hasChanges() {
     final auth = ref.read(authProvider);
     final initialName = auth.displayName ?? '';
-    final initialEmail = auth.email ?? '';
     
     return currentName.trim() != initialName ||
-           currentEmail.trim() != initialEmail ||
            _profileImage != null;
   }
 
   void _submitForm() async {
     final name = currentName.trim();
-    final email = currentEmail.trim();
 
     // Validasi input dasar
-    if (name.isEmpty && email.isEmpty) {
+    if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Minimal isi salah satu: nama atau email'),
+          content: Text('Nama tidak boleh kosong'),
           backgroundColor: Colors.red,
         ),
       );
@@ -247,7 +239,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       // Update profile menggunakan AuthProvider
       final authNotifier = ref.read(authProvider.notifier);
       final success = await authNotifier.updateProfile(
-        displayName: name.isNotEmpty ? name : null,
+        displayName: name,
         photoURL: photoURL,
       );
 
@@ -335,55 +327,51 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   const SizedBox(height: 24),
 
                   // Profile Image
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(20),
-                      image: _profileImage != null
-                          ? DecorationImage(
-                              image: FileImage(_profileImage!),
-                              fit: BoxFit.cover,
-                            )
-                          : (auth.photoURL != null && auth.photoURL!.isNotEmpty)
-                              ? DecorationImage(
-                                  image: NetworkImage(auth.photoURL!),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
+                  GestureDetector(
+                    onTap: _isUpdating ? null : _showImagePickerOptions,
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(25),
+                        image: _profileImage != null
+                            ? DecorationImage(
+                                image: FileImage(_profileImage!),
+                                fit: BoxFit.cover,
+                              )
+                            : (auth.photoURL != null && auth.photoURL!.isNotEmpty)
+                                ? DecorationImage(
+                                    image: NetworkImage(auth.photoURL!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                      ),
+                      child: (_profileImage == null && 
+                             (auth.photoURL == null || auth.photoURL!.isEmpty))
+                          ? const Icon(Icons.person,
+                              color: Colors.white, size: 50)
+                          : Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(25),
+                                color: Colors.black.withOpacity(0.3),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 30,
+                              ),
+                            ),
                     ),
-                    child: (_profileImage == null && 
-                           (auth.photoURL == null || auth.photoURL!.isEmpty))
-                        ? const Icon(Icons.person,
-                            color: Colors.white, size: 40)
-                        : null,
                   ),
 
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _actionButton(
-                        'Ganti Foto', 
-                        Icons.camera_alt_outlined,
-                        _isUpdating ? null : () {
-                          _showImagePickerOptions();
-                        }
-                      ),
-                      const SizedBox(width: 16),
-                      _actionButton(
-                        'Ganti Password', 
-                        Icons.lock_outline, 
-                        _isUpdating ? null : () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const ChangePasswordPage()),
-                          );
-                        }
-                      ),
-                    ],
+                  const SizedBox(height: 16),
+                  Text(
+                    'Tap foto untuk mengubah',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
                   ),
                   const SizedBox(height: 32),
 
@@ -398,23 +386,24 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                     },
                     decoration: _inputDecoration('Nama'),
                     validator: (value) {
-                      if (value != null && value.trim().isNotEmpty) {
-                        if (value.trim().length < 2) {
-                          return 'Nama minimal 2 karakter';
-                        }
-                        if (value.trim().length > 50) {
-                          return 'Nama maksimal 50 karakter';
-                        }
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Nama tidak boleh kosong';
+                      }
+                      if (value.trim().length < 2) {
+                        return 'Nama minimal 2 karakter';
+                      }
+                      if (value.trim().length > 50) {
+                        return 'Nama maksimal 50 karakter';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
 
-                  // Email (readonly karena biasanya email tidak bisa diubah)
+                  // Email (readonly)
                   TextFormField(
                     controller: _emailController,
-                    enabled: false, // Email biasanya tidak bisa diubah
+                    enabled: false,
                     keyboardType: TextInputType.emailAddress,
                     decoration: _inputDecoration('Email').copyWith(
                       filled: true,
@@ -422,14 +411,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                       suffixIcon: const Icon(Icons.lock_outline, 
                                            color: Colors.grey, size: 16),
                     ),
-                    validator: (value) {
-                      if (value != null &&
-                          value.trim().isNotEmpty &&
-                          !_isValidEmail(value.trim())) {
-                        return 'Format email tidak valid';
-                      }
-                      return null;
-                    },
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -522,40 +503,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.grey.shade200),
-      ),
-    );
-  }
-
-  Widget _actionButton(String text, IconData icon, VoidCallback? onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: onTap != null ? Colors.blue : Colors.grey,
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              text,
-              style: TextStyle(
-                color: onTap != null ? Colors.blue : Colors.grey,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              icon, 
-              color: onTap != null ? Colors.blue : Colors.grey, 
-              size: 16,
-            ),
-          ],
-        ),
       ),
     );
   }

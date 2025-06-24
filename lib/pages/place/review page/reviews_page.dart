@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
-import 'package:j_tour/pages/place/review_card.dart';
+import 'package:j_tour/pages/place/review%20page/review_card.dart';
 import 'package:j_tour/providers/review_provider.dart';
 
 class ReviewsPage extends ConsumerStatefulWidget {
