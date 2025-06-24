@@ -4,6 +4,7 @@ import 'package:j_tour/pages/account/edit_profile.dart';
 import 'package:j_tour/pages/account/about_jtour.dart';
 import 'package:j_tour/pages/account/privacy_policy.dart';
 import 'package:j_tour/pages/login/login_page.dart';
+import 'package:j_tour/pages/onBoarding/onboarding_page.dart';
 import 'package:j_tour/providers/auth_provider.dart';
 
 class AccountPage extends ConsumerStatefulWidget {
@@ -48,7 +49,7 @@ class _AccountPageState extends ConsumerState<AccountPage> {
         // Jika logout berhasil, arahkan ke LoginPage dan clear semua route
         if (mounted) {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const LoginPage()),
+            MaterialPageRoute(builder: (context) => const OnboardingPage()),
             (route) => false,
           );
         }

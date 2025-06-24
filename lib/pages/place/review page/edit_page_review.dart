@@ -41,6 +41,20 @@ class _EditReviewPageState extends ConsumerState<EditReviewPage> {
     setState(() {
       _rating = rating;
     });
+    
+    // Feedback haptic untuk iOS/Android
+    // HapticFeedback.selectionClick(); // Uncomment jika ingin haptic feedback
+    
+    // Visual feedback
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Rating: $_rating bintang'),
+        duration: const Duration(milliseconds: 800),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
+      ),
+    );
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -155,26 +169,48 @@ class _EditReviewPageState extends ConsumerState<EditReviewPage> {
     });
   }
 
-  void _removeExistingImage(int index) {
-    setState(() {
-      _existingImages.removeAt(index);
-    });
-  }
+void _removeExistingImage(int index) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Hapus Foto'),
+      content: const Text('Apakah Anda yakin ingin menghapus foto ini?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            setState(() {
+              _existingImages.removeAt(index);
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Foto berhasil dihapus'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          },
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+}
 
   Future<void> _updateReview() async {
-    if (_rating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Silakan berikan rating')),
-      );
-      return;
-    }
-    
-    if (_reviewController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Silakan tulis ulasan Anda')),
-      );
-      return;
-    }
+  if (_rating == 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Silakan berikan rating (1-5 bintang)'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    return;
+  }
 
     final auth = ref.read(authProvider);
     final userId = auth.uid;

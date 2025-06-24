@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
 import 'package:j_tour/models/review_model.dart';
 import 'package:j_tour/pages/place/review%20page/widgets/review_action_dialog.dart';
+import 'package:j_tour/pages/place/review%20page/review_card.dart'; // Import ImageViewer
 import 'package:j_tour/providers/auth_provider.dart';
 
 class UserPlaceReviewsSection extends ConsumerWidget {
@@ -384,7 +385,7 @@ class UserPlaceReviewsSection extends ConsumerWidget {
             ),
           ],
           
-          // Review images
+          // Review images - FIXED WITH CLICKABLE FUNCTIONALITY
           if (review.images != null && review.images!.isNotEmpty) ...[
             const SizedBox(height: 12),
             SizedBox(
@@ -393,23 +394,85 @@ class UserPlaceReviewsSection extends ConsumerWidget {
                 scrollDirection: Axis.horizontal,
                 itemCount: review.images!.length,
                 itemBuilder: (context, index) {
+                  final imageUrl = _getImageUrl(review.images![index]);
+                  
                   return Container(
                     margin: const EdgeInsets.only(right: 8),
-                    child: ClipRRect(
+                    width: 80,
+                    decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        review.images![index].url,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 80,
-                            height: 80,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.image_not_supported),
-                          );
+                      color: Colors.grey[200],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          print('Image tapped at index: $index');
+                          _viewImage(context, review.images!, index);
                         },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  print('Error loading image: $error');
+                                  return Container(
+                                    color: Colors.grey[200],
+                                    child: const Icon(
+                                      Icons.image,
+                                      color: Colors.grey,
+                                    ),
+                                  );
+                                },
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    color: Colors.grey[200],
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        value: loadingProgress.expectedTotalBytes != null
+                                            ? loadingProgress.cumulativeBytesLoaded / 
+                                              loadingProgress.expectedTotalBytes!
+                                            : null,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              // Overlay dengan ikon tap
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topRight,
+                                    end: Alignment.bottomLeft,
+                                    colors: [
+                                      Colors.black.withOpacity(0.3),
+                                      Colors.transparent,
+                                    ],
+                                    stops: const [0.0, 0.7],
+                                  ),
+                                ),
+                                child: const Align(
+                                  alignment: Alignment.topRight,
+                                  child: Padding(
+                                    padding: EdgeInsets.all(4),
+                                    child: Icon(
+                                      Icons.zoom_in,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   );
@@ -418,6 +481,37 @@ class UserPlaceReviewsSection extends ConsumerWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  // Helper method untuk mendapatkan URL gambar
+  String _getImageUrl(dynamic image) {
+    if (image is String) {
+      return image;
+    } else if (image is Map) {
+      return image['url'] ?? '';
+    } else {
+      // If image is an object with url property
+      try {
+        return image.url ?? '';
+      } catch (e) {
+        print('Error getting image URL: $e');
+        return '';
+      }
+    }
+  }
+
+  // Method untuk membuka image viewer
+  void _viewImage(BuildContext context, List images, int initialIndex) {
+    print('_viewImage called with initialIndex: $initialIndex');
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ImageViewer(
+          images: images,
+          initialIndex: initialIndex,
+        ),
       ),
     );
   }
@@ -444,5 +538,223 @@ class UserPlaceReviewsSection extends ConsumerWidget {
     } else {
       return '${(difference.inDays / 365).floor()} tahun yang lalu';
     }
+  }
+}
+
+// ImageViewer class - pastikan ini ada di file yang sama atau di-import
+class ImageViewer extends StatefulWidget {
+  final List images;
+  final int initialIndex;
+
+  const ImageViewer({
+    super.key,
+    required this.images,
+    required this.initialIndex,
+  });
+
+  @override
+  State<ImageViewer> createState() => _ImageViewerState();
+}
+
+class _ImageViewerState extends State<ImageViewer> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+    print('ImageViewer initialized with ${widget.images.length} images');
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  // Helper method untuk mendapatkan URL gambar
+  String _getImageUrl(dynamic image) {
+    if (image is String) {
+      return image;
+    } else if (image is Map) {
+      return image['url'] ?? '';
+    } else {
+      try {
+        return image.url ?? '';
+      } catch (e) {
+        print('Error getting image URL: $e');
+        return '';
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          '${_currentIndex + 1} / ${widget.images.length}',
+          style: const TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+      ),
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemCount: widget.images.length,
+            itemBuilder: (context, index) {
+              final imageUrl = _getImageUrl(widget.images[index]);
+              print('Displaying image at index $index: $imageUrl');
+              
+              return Center(
+                child: InteractiveViewer(
+                  maxScale: 3.0,
+                  minScale: 0.8,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      print('Error in ImageViewer: $error');
+                      return Container(
+                        color: Colors.grey[800],
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: Colors.white,
+                                size: 48,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Gagal memuat gambar',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded / 
+                                loadingProgress.expectedTotalBytes!
+                              : null,
+                          color: Colors.white,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+          
+          // Navigation arrows
+          if (widget.images.length > 1) ...[
+            if (_currentIndex > 0)
+              Positioned(
+                left: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.chevron_left,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            
+            if (_currentIndex < widget.images.length - 1)
+              Positioned(
+                right: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.chevron_right,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+          
+          // Page indicator
+          if (widget.images.length > 1)
+            Positioned(
+              bottom: 50,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  widget.images.length,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: index == _currentIndex
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
