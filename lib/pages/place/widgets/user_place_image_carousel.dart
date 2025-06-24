@@ -1,4 +1,3 @@
-// widgets/user_place_image_carousel.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -9,11 +8,13 @@ import 'package:j_tour/providers/saved_provider.dart';
 class UserPlaceImageCarousel extends ConsumerStatefulWidget {
   final Place place;
   final VoidCallback onBack;
+  final String userId;
 
   const UserPlaceImageCarousel({
     super.key,
     required this.place,
     required this.onBack,
+    required this.userId,
   });
 
   @override
@@ -27,7 +28,7 @@ class _UserPlaceImageCarouselState extends ConsumerState<UserPlaceImageCarousel>
   @override
   void initState() {
     super.initState();
-    _updateImages();
+    _setupImages();
   }
 
   @override
@@ -35,24 +36,21 @@ class _UserPlaceImageCarouselState extends ConsumerState<UserPlaceImageCarousel>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.place.image != widget.place.image ||
         oldWidget.place.additionalImages != widget.place.additionalImages) {
-      _updateImages();
+      _setupImages();
     }
   }
 
-  void _updateImages() {
+  void _setupImages() {
     _images = [];
     
-    // Add main image
     if (widget.place.image?.isNotEmpty == true) {
       _images.add(widget.place.image!);
     }
     
-    // Add additional images
     if (widget.place.additionalImages?.isNotEmpty == true) {
       _images.addAll(widget.place.additionalImages!);
     }
     
-    // Fallback if no images
     if (_images.isEmpty) {
       _images.add('assets/images/placeholder.jpg');
     }
@@ -61,27 +59,51 @@ class _UserPlaceImageCarouselState extends ConsumerState<UserPlaceImageCarousel>
   void _sharePlace() {
     final place = widget.place;
     Share.share(
-        "Rekomendasi wisata: ${place.name} di ${place.location} ⭐️ ${place.rating}/5");
+      "Rekomendasi wisata: ${place.name} di ${place.location} ⭐️ ${place.rating}/5"
+    );
   }
 
   void _toggleSavePlace() {
-    ref.read(savedPlaceProvider.notifier).toggleSaved(widget.place);
+    if (widget.userId.isEmpty) {
+      _showMessage('Silakan login terlebih dahulu', Colors.orange);
+      return;
+    }
+
+    ref.read(savedPlaceProvider.notifier).toggleSaved(widget.userId, widget.place);
+    
+    // Show immediate feedback
+    final isSaved = ref.read(savedPlaceProvider.notifier).isSaved(widget.place);
+    final message = isSaved 
+        ? '${widget.place.name} ditambahkan ke favorit' 
+        : '${widget.place.name} dihapus dari favorit';
+    final color = isSaved ? Colors.green : Colors.grey;
+    
+    _showMessage(message, color);
+  }
+
+  void _showMessage(String message, Color color) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   Widget _buildImage(String imagePath) {
-    if (widget.place.isLocalImage == true) {
+    final isLocal = widget.place.isLocalImage == true;
+    
+    if (isLocal) {
       return Image.asset(
         imagePath,
         width: double.infinity,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.grey[300],
-            child: const Center(
-              child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
-            ),
-          );
-        },
+        errorBuilder: (_, __, ___) => _buildErrorPlaceholder(),
       );
     } else {
       return Image.network(
@@ -90,30 +112,40 @@ class _UserPlaceImageCarouselState extends ConsumerState<UserPlaceImageCarousel>
         fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
-          return Container(
-            color: Colors.grey[200],
-            child: const Center(child: CircularProgressIndicator()),
-          );
+          return _buildLoadingPlaceholder();
         },
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.grey[300],
-            child: const Center(
-              child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
-            ),
-          );
-        },
+        errorBuilder: (_, __, ___) => _buildErrorPlaceholder(),
       );
     }
   }
 
+  Widget _buildLoadingPlaceholder() {
+    return Container(
+      color: Colors.grey[200],
+      child: const Center(
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+  }
+
+  Widget _buildErrorPlaceholder() {
+    return Container(
+      color: Colors.grey[300],
+      child: const Center(
+        child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final savedNotifier = ref.read(savedPlaceProvider.notifier);
-    final isSaved = savedNotifier.isSaved(widget.place);
+    // Simple watch - only get what we need
+    final isSaved = ref.watch(savedPlaceProvider.select((state) => 
+        state.hasValue && state.value!.places.any((p) => p.id == widget.place.id)));
 
     return Stack(
       children: [
+        // Main carousel
         SizedBox(
           height: 280,
           child: CarouselSlider(
@@ -126,58 +158,40 @@ class _UserPlaceImageCarouselState extends ConsumerState<UserPlaceImageCarousel>
                 setState(() => _currentImageIndex = index);
               },
             ),
-            items: _images.map((img) {
-              return SizedBox(
-                width: double.infinity,
-                child: _buildImage(img),
-              );
-            }).toList(),
+            items: _images.map((img) => SizedBox(
+              width: double.infinity,
+              child: _buildImage(img),
+            )).toList(),
           ),
         ),
 
-        // Top overlay buttons
+        // Top overlay with buttons
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-                    onPressed: widget.onBack,
-                  ),
+                // Back button
+                _buildOverlayButton(
+                  icon: Icons.arrow_back,
+                  onPressed: widget.onBack,
                 ),
+                
+                // Action buttons
                 Row(
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          isSaved ? Icons.bookmark : Icons.bookmark_outline,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        onPressed: _toggleSavePlace,
-                      ),
+                    // Save button
+                    _buildOverlayButton(
+                      icon: isSaved ? Icons.bookmark : Icons.bookmark_outline,
+                      onPressed: _toggleSavePlace,
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.share, color: Colors.white, size: 20),
-                        onPressed: _sharePlace,
-                      ),
+                    
+                    // Share button
+                    _buildOverlayButton(
+                      icon: Icons.share,
+                      onPressed: _sharePlace,
                     ),
                   ],
                 ),
@@ -193,14 +207,13 @@ class _UserPlaceImageCarouselState extends ConsumerState<UserPlaceImageCarousel>
             left: 16,
             child: Row(
               children: _images.asMap().entries.map((entry) {
+                final isActive = _currentImageIndex == entry.key;
                 return Container(
-                  width: _currentImageIndex == entry.key ? 20 : 6,
+                  width: isActive ? 20 : 6,
                   height: 6,
                   margin: const EdgeInsets.only(right: 4),
                   decoration: BoxDecoration(
-                    color: _currentImageIndex == entry.key
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.4),
+                    color: isActive ? Colors.white : Colors.white.withOpacity(0.4),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 );
@@ -208,6 +221,22 @@ class _UserPlaceImageCarouselState extends ConsumerState<UserPlaceImageCarousel>
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildOverlayButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.4),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white, size: 20),
+        onPressed: onPressed,
+      ),
     );
   }
 }

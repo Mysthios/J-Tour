@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:j_tour/models/place_model.dart';
 import 'package:j_tour/pages/place/place_detail.dart';
+import 'package:j_tour/providers/place_provider.dart';
 import 'package:intl/intl.dart';
 
 const Color kPrimaryBlue = Color(0xFF0072BC);
 
-class ExploreDestinationCard extends StatelessWidget {
+class ExploreDestinationCard extends ConsumerWidget {
   final Place place;
 
   const ExploreDestinationCard({
@@ -15,18 +17,68 @@ class ExploreDestinationCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final formatter =
         NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
 
+    // REACTIVE: Listen ke perubahan state dari provider
+    final placesState = ref.watch(placesProvider);
+    
+    // Cari place dengan ID yang sama dari provider state yang terbaru
+    final currentPlace = placesState.places.where((p) => p.id == place.id).firstOrNull ?? place;
+
+    // Debug print untuk melihat perubahan rating
+    if (currentPlace.rating != place.rating) {
+      print('=== EXPLORE RATING UPDATE DETECTED ===');
+      print('Place: ${currentPlace.name}');
+      print('Original rating: ${place.rating}');
+      print('Updated rating: ${currentPlace.rating}');
+      print('=== END EXPLORE RATING UPDATE ===');
+    }
+
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PlaceDetailPage(place: place),
-          ),
-        );
+      onTap: () async {
+        print('=== EXPLORE CARD TAP DEBUG ===');
+        print('Card tapped: ${currentPlace.name}');
+        print('Place ID: ${currentPlace.id}');
+        print('Current rating: ${currentPlace.rating}');
+        print('=== END EXPLORE CARD TAP DEBUG ===');
+
+        try {
+          // Gunakan data terbaru dari provider state
+          final latestPlace = ref.read(placesProvider.notifier).getPlaceWithLatestRating(currentPlace.id);
+
+          if (context.mounted) {
+            if (latestPlace != null) {
+              print('DEBUG: Using latest place data: ${latestPlace.name} (Rating: ${latestPlace.rating})');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PlaceDetailPage(place: latestPlace),
+                ),
+              );
+            } else {
+              print('DEBUG: Latest place not found, using current place data');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PlaceDetailPage(place: currentPlace),
+                ),
+              );
+            }
+          }
+        } catch (e) {
+          print('Error fetching latest place data: $e');
+          if (context.mounted) {
+            // Fallback to current place data
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PlaceDetailPage(place: currentPlace),
+              ),
+            );
+          }
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -52,7 +104,7 @@ class ExploreDestinationCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(12)),
-                child: _buildImage(),
+                child: _buildImage(currentPlace),
               ),
             ),
             // Informasi tempat
@@ -67,7 +119,7 @@ class ExploreDestinationCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          place.name,
+                          currentPlace.name,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -78,7 +130,7 @@ class ExploreDestinationCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            formatter.format(place.price),
+                            formatter.format(currentPlace.price),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -105,7 +157,7 @@ class ExploreDestinationCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          place.location,
+                          currentPlace.location,
                           style:
                               const TextStyle(color: Colors.grey, fontSize: 12),
                           overflow: TextOverflow.ellipsis,
@@ -114,21 +166,8 @@ class ExploreDestinationCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // Rating
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 14, color: Colors.orange),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${place.rating ?? 0.0}",
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
+                  // Rating - REACTIVE: akan update otomatis saat rating berubah
+                  _buildRatingSection(currentPlace),
                 ],
               ),
             ),
@@ -138,18 +177,52 @@ class ExploreDestinationCard extends StatelessWidget {
     );
   }
 
-  // Method untuk membangun widget gambar yang tepat (sama seperti di WisataAndaCard)
-  Widget _buildImage() {
+  // Separate method untuk rating section dengan animasi (sama seperti PlaceCard)
+  Widget _buildRatingSection(Place currentPlace) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: Row(
+        key: ValueKey(currentPlace.rating), // Key untuk trigger animasi
+        children: [
+          Icon(
+            Icons.star,
+            size: 14,
+            color: Colors.amber[600],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${(currentPlace.rating ?? 0.0).toStringAsFixed(1)}',
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          if (currentPlace.rating != null && currentPlace.rating! > 0)
+            Text(
+              ' (${_getRatingText(currentPlace.rating!)})',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: Colors.grey[600],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Method untuk membangun widget gambar yang tepat
+  Widget _buildImage(Place currentPlace) {
     // Debug print untuk melihat nilai image dan isLocalImage
     print('=== EXPLORE IMAGE DEBUG ===');
-    print('Image path: ${place.image}');
-    print('Is Local Image: ${place.isLocalImage}');
+    print('Image path: ${currentPlace.image}');
+    print('Is Local Image: ${currentPlace.isLocalImage}');
     print('=== END EXPLORE IMAGE DEBUG ===');
 
     // Jika gambar adalah URL (dari API)
-    if (!place.isLocalImage && _isValidUrl(place.image)) {
+    if (!currentPlace.isLocalImage && _isValidUrl(currentPlace.image)) {
       return Image.network(
-        place.image,
+        currentPlace.image,
         width: double.infinity,
         fit: BoxFit.fitWidth, // Fit width agar gambar tidak terpotong horizontal
         loadingBuilder: (context, child, loadingProgress) {
@@ -188,9 +261,9 @@ class ExploreDestinationCard extends StatelessWidget {
       );
     }
     // Jika gambar adalah file lokal
-    else if (place.isLocalImage && place.image.isNotEmpty) {
+    else if (currentPlace.isLocalImage && currentPlace.image.isNotEmpty) {
       return Image.file(
-        File(place.image),
+        File(currentPlace.image),
         width: double.infinity,
         fit: BoxFit.fitWidth, // Fit width agar gambar tidak terpotong horizontal
         errorBuilder: (context, error, stackTrace) {
@@ -213,9 +286,9 @@ class ExploreDestinationCard extends StatelessWidget {
       );
     }
     // Jika gambar adalah asset
-    else if (!place.isLocalImage && !_isValidUrl(place.image) && place.image.isNotEmpty) {
+    else if (!currentPlace.isLocalImage && !_isValidUrl(currentPlace.image) && currentPlace.image.isNotEmpty) {
       return Image.asset(
-        place.image,
+        currentPlace.image,
         width: double.infinity,
         fit: BoxFit.fitWidth, // Fit width agar gambar tidak terpotong horizontal
         errorBuilder: (context, error, stackTrace) {
@@ -264,5 +337,14 @@ class ExploreDestinationCard extends StatelessWidget {
     } catch (e) {
       return false;
     }
+  }
+
+  String _getRatingText(double rating) {
+    if (rating >= 5.0) return 'Sangat Bagus';
+    if (rating >= 4.5) return 'Sangat Baik';
+    if (rating >= 4.0) return 'Baik';
+    if (rating >= 3.5) return 'Cukup';
+    if (rating >= 3.0) return 'Biasa';
+    return 'Kurang';
   }
 }

@@ -34,6 +34,139 @@ class PlacesNotifier extends StateNotifier<PlacesState> {
   PlacesNotifier() : super(const PlacesState()) {
     loadPlaces(); // Auto load places when provider is created
   }
+  Future<bool> updatePlaceRating(String placeId, double newRating) async {
+  try {
+    print('=== UPDATE RATING DEBUG ===');
+    print('Updating rating for place: $placeId');
+    print('New rating: $newRating');
+
+    // Validasi rating
+    if (newRating < 0 || newRating > 5) {
+      throw Exception('Rating harus antara 0 dan 5');
+    }
+
+    // Update di state lokal dulu untuk immediate UI response
+    final updatedPlaces = state.places.map((place) {
+      if (place.id == placeId) {
+        return place.copyWith(rating: newRating);
+      }
+      return place;
+    }).toList();
+
+    // Update state dengan data baru
+    state = state.copyWith(places: updatedPlaces);
+    print('Local state updated with new rating');
+
+    // Sync dengan server (jika ada API endpoint untuk update rating)
+    // Uncomment dan sesuaikan dengan API Anda
+    /*
+    await ApiService.updatePlaceRating(placeId, newRating);
+    print('Rating synced with server');
+    */
+
+    return true;
+  } catch (e) {
+    print('Error updating rating: $e');
+    // Revert state jika gagal sync dengan server
+    await refreshPlaces();
+    return false;
+  }
+}
+
+// Update entire place dengan rating baru
+Future<bool> updatePlaceWithRating(String placeId, Place updatedPlace) async {
+  try {
+    print('=== UPDATE PLACE WITH RATING DEBUG ===');
+    print('Updating place: $placeId');
+    print('New rating: ${updatedPlace.rating}');
+
+    // Update di state lokal dulu
+    final updatedPlaces = state.places.map((place) {
+      if (place.id == placeId) {
+        return updatedPlace;
+      }
+      return place;
+    }).toList();
+
+    state = state.copyWith(places: updatedPlaces);
+    print('Local state updated');
+
+    // Optional: Sync dengan server jika diperlukan
+    // await ApiService.updatePlace(...);
+
+    return true;
+  } catch (e) {
+    print('Error updating place with rating: $e');
+    state = state.copyWith(error: e.toString());
+    return false;
+  }
+}
+
+// Method untuk increment rating berdasarkan review
+Future<bool> addRatingReview(String placeId, double userRating, int totalReviews, double averageRating) async {
+  try {
+    print('=== ADD RATING REVIEW DEBUG ===');
+    print('Place ID: $placeId');
+    print('User rating: $userRating');
+    print('Total reviews: $totalReviews');
+    print('Average rating: $averageRating');
+
+    // Update di state lokal
+    final updatedPlaces = state.places.map((place) {
+      if (place.id == placeId) {
+        return place.copyWith(
+          rating: averageRating,
+          // Jika ada field untuk total reviews, update juga
+          // totalReviews: totalReviews,
+        );
+      }
+      return place;
+    }).toList();
+
+    state = state.copyWith(places: updatedPlaces);
+
+    // Sync dengan server
+    // await ApiService.addReview(placeId, userRating);
+
+    return true;
+  } catch (e) {
+    print('Error adding rating review: $e');
+    return false;
+  }
+}
+
+// Get place dengan rating terbaru dari state
+Place? getPlaceWithLatestRating(String placeId) {
+  try {
+    return state.places.firstWhere((place) => place.id == placeId);
+  } catch (e) {
+    print('Place not found: $placeId');
+    return null;
+  }
+}
+
+// Method untuk batch update ratings (jika diperlukan)
+Future<bool> updateMultipleRatings(Map<String, double> ratingsMap) async {
+  try {
+    print('=== BATCH UPDATE RATINGS DEBUG ===');
+    print('Updating ${ratingsMap.length} ratings');
+
+    final updatedPlaces = state.places.map((place) {
+      if (ratingsMap.containsKey(place.id)) {
+        return place.copyWith(rating: ratingsMap[place.id]);
+      }
+      return place;
+    }).toList();
+
+    state = state.copyWith(places: updatedPlaces);
+    print('Batch ratings updated in local state');
+
+    return true;
+  } catch (e) {
+    print('Error in batch update ratings: $e');
+    return false;
+  }
+}
 
   // Get place by ID from local state first, then from API if not found
   Future<Place?> getPlaceById(String id) async {
@@ -485,3 +618,4 @@ final availableLocationsProvider = Provider<List<String>>((ref) {
   final notifier = ref.read(placesProvider.notifier);
   return notifier.getAvailableLocations();
 });
+

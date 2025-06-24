@@ -14,10 +14,14 @@ import 'package:j_tour/providers/auth_provider.dart'; // TAMBAH INI
 class MainPage extends ConsumerWidget {
   const MainPage({super.key});
 
+  
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(bottomNavBarProvider);
     final authState = ref.watch(authProvider); // TAMBAH INI
+
+    
     
     // Ambil role dari auth state, bukan hardcode
     final bool isAdmin = authState.isAdmin;

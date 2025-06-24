@@ -75,7 +75,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
               .toList();
           break;
         case "Populer":
-          filtered = filtered.where((place) => (place.rating ?? 0) >= 4.5).toList();
+          filtered = filtered.where((place) => (place.rating ?? 0) >= 4.0).toList();
           break;
       }
     }

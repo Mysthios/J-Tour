@@ -50,7 +50,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   List<Place> get popularPlaces {
     final placesState = ref.watch(placesProvider);
     final places = placesState.places;
-    return places.where((place) => (place.rating ?? 0) >= 4.5).toList()
+    return places.where((place) => (place.rating ?? 0) >= 4.0).toList()
       ..sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
   }
 
