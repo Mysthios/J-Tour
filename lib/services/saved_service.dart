@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:j_tour/models/place_model.dart';
 
 class SavedService {
-  static const String baseUrl = 'https://j-tour-back-end-rr5e.vercel.app/api';
+  static const String baseUrl = 'https://express-j-tour.vercel.app//api';
   static const Duration timeoutDuration = Duration(seconds: 10);
 
   // Get all saved places untuk user tertentu
