@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://10.132.1.22:3000/api/auth';
+  static const String baseUrl = 'https://express-j-tour.vercel.app/api/auth';
 
   // Private variables for tracking refresh state
   static bool _isRefreshing = false;

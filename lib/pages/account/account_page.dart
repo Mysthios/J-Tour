@@ -15,7 +15,7 @@ class AccountPage extends ConsumerStatefulWidget {
 
 class _AccountPageState extends ConsumerState<AccountPage> {
   int _currentIndex = 3; // Set the initial index to 3 for the Account page
-  
+
   void _onNavBarTap(int index) {
     setState(() => _currentIndex = index);
   }
@@ -23,7 +23,7 @@ class _AccountPageState extends ConsumerState<AccountPage> {
   // Method untuk handle logout
   Future<void> _handleLogout() async {
     final authNotifier = ref.read(authProvider.notifier);
-    
+
     // Tampilkan loading dialog
     showDialog(
       context: context,
@@ -38,7 +38,7 @@ class _AccountPageState extends ConsumerState<AccountPage> {
     try {
       // Panggil logout dari AuthProvider
       bool success = await authNotifier.logout();
-      
+
       // Tutup loading dialog
       if (mounted) {
         Navigator.of(context).pop();
@@ -111,7 +111,7 @@ class _AccountPageState extends ConsumerState<AccountPage> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
       appBar: AppBar(
@@ -198,7 +198,8 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                       if (auth.isAdmin) ...[
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.amber,
                             borderRadius: BorderRadius.circular(12),
@@ -296,11 +297,13 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                 Icons.chevron_right,
                 color: Colors.grey,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                  MaterialPageRoute(
+                      builder: (context) => const EditProfilePage()),
                 );
               },
             ),
@@ -361,7 +364,8 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const AboutJTourPage()),
+                      MaterialPageRoute(
+                          builder: (context) => const AboutJTourPage()),
                     );
                   },
                 ),
@@ -391,7 +395,8 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
+                      MaterialPageRoute(
+                          builder: (context) => const PrivacyPolicyPage()),
                     );
                   },
                 ),
@@ -408,7 +413,8 @@ class _AccountPageState extends ConsumerState<AccountPage> {
               onPressed: auth.isLoading ? null : _showLogoutDialog,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF4D4D),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -431,13 +437,9 @@ class _AccountPageState extends ConsumerState<AccountPage> {
                       ),
                     ),
             ),
-          )
+          ),
         ],
       ),
-      //       bottomNavigationBar: CustomBottomNavBar(
-      //   currentIndex: _currentIndex,
-      //   onTap: _onNavBarTap,
-      // ),
     );
   }
 }

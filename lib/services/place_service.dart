@@ -6,7 +6,7 @@ import 'package:j_tour/models/place_model.dart';
 import 'package:mime/mime.dart'; // Add this dependency: dart pub add mime
 
 class ApiService {
-  static const String baseUrl = 'http://10.132.1.22:3000/api';
+  static const String baseUrl = 'https://express-j-tour.vercel.app/api';
 
   // Headers default
   static Map<String, String> get _headers => {

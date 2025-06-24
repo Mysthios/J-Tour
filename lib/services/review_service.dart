@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/review_model.dart';
 
-const String baseUrl = 'http://10.132.1.22:3000/api';
+const String baseUrl = 'https://express-j-tour.vercel.app/api';
 
 class ReviewService {
   // Get reviews for a place
